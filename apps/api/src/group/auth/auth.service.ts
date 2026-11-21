@@ -73,6 +73,10 @@ function isAccountInactive(status: string): boolean {
   return status === 'SUSPENDED' || status === 'BANNED';
 }
 
+function isAccountBlocked(user: { status: string; deletedAt?: Date | null }): boolean {
+  return isAccountInactive(user.status) || user.deletedAt != null;
+}
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -94,9 +98,10 @@ export class AuthService {
       where: { email: dto.email.toLowerCase() },
     });
     if (!user?.passwordHash) {
+      await this.recordLogin({ userId: user?.id, success: false, method: 'password' });
       throw new UnauthorizedException('Invalid email or password');
     }
-    if (isAccountInactive(user.status)) {
+    if (isAccountBlocked(user)) {
       // Session revocation: suspended/banned accounts cannot mint new sessions.
       // Also clears any refresh token that survived (defense in depth).
       await this.prisma.refreshToken.deleteMany({ where: { userId: user.id } });
@@ -105,6 +110,7 @@ export class AuthService {
 
     const valid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!valid) {
+      await this.recordLogin({ userId: user.id, success: false, method: 'password' });
       throw new UnauthorizedException('Invalid email or password');
     }
 
@@ -116,7 +122,79 @@ export class AuthService {
       return { twoFactorRequired: true, ...challenge };
     }
 
+    await this.recordLogin({ userId: user.id, success: true, method: 'password' });
     return this.issueAuthResponse(await this.buildAuthUser(user));
+  }
+
+  async register(input: { email: string; password: string; name: string }): Promise<{ id: string; emailVerified: false }> {
+    const email = input.email.trim().toLowerCase();
+    if (!isValidEmail(email) || containsUnsafeText(input.name)) {
+      throw new BadRequestException('Invalid registration');
+    }
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      throw new ConflictException('Email already registered');
+    }
+    const user = await this.prisma.user.create({
+      data: {
+        email,
+        name: input.name.trim().slice(0, 80),
+        passwordHash: await bcrypt.hash(input.password, BCRYPT_ROUNDS),
+        emailVerified: false,
+        role: 'LEARNER',
+      },
+    });
+    await this.events
+      .publish({
+        name: 'group.user.registered',
+        occurredAt: new Date().toISOString(),
+        userId: user.id,
+        via: 'email',
+        dedupeKey: `register:${user.id}`,
+      })
+      .catch(() => undefined);
+    await this.issueVerificationLink(user.id, email, user.name);
+    return { id: user.id, emailVerified: false };
+  }
+
+  async verifyEmail(token: string): Promise<{ emailVerified: true }> {
+    if (!RESET_TOKEN_PATTERN.test(token)) {
+      throw new BadRequestException('Invalid or expired verification link');
+    }
+    const record = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash: this.hashToken(token) },
+    });
+    if (!record || record.usedAt || record.expiresAt < new Date()) {
+      throw new BadRequestException('Invalid or expired verification link');
+    }
+    await this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.passwordResetToken.updateMany({
+        where: { id: record.id, usedAt: null },
+        data: { usedAt: new Date() },
+      });
+      if (claimed.count === 0) throw new BadRequestException('Invalid or expired verification link');
+      await tx.user.update({ where: { id: record.userId }, data: { emailVerified: true } });
+    });
+    return { emailVerified: true };
+  }
+
+  async listSessions(userId: string) {
+    return this.prisma.refreshToken.findMany({
+      where: { userId },
+      select: { id: true, createdAt: true, expiresAt: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async revokeSession(userId: string, sessionId: string) {
+    await this.prisma.refreshToken.deleteMany({ where: { id: sessionId, userId } });
+    return { revoked: true };
+  }
+
+  async deactivate(userId: string) {
+    await this.prisma.user.update({ where: { id: userId }, data: { deletedAt: new Date() } });
+    await this.prisma.refreshToken.deleteMany({ where: { userId } });
+    return { deactivated: true as const };
   }
 
   /**
@@ -129,7 +207,7 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
-    if (isAccountInactive(user.status)) {
+    if (isAccountBlocked(user)) {
       throw new UnauthorizedException('Account suspended');
     }
     return this.issueAuthResponse(await this.buildAuthUser(user));
@@ -257,7 +335,7 @@ export class AuthService {
         data: { phoneVerified: true },
       });
     }
-    if (isAccountInactive(user.status)) {
+    if (isAccountBlocked(user)) {
       throw new UnauthorizedException('Account suspended');
     }
 
@@ -520,7 +598,7 @@ export class AuthService {
     if (!record || record.usedAt || record.expiresAt < new Date()) {
       throw new BadRequestException('Invalid or expired reset link');
     }
-    if (isAccountInactive(record.user.status)) {
+    if (isAccountBlocked(record.user)) {
       throw new UnauthorizedException('Account suspended');
     }
 
@@ -599,7 +677,7 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     // Server-authoritative session state: a suspended/banned user is rejected
     // on EVERY authenticated request, even with a still-valid access token.
-    if (!user || isAccountInactive(user.status)) {
+    if (!user || isAccountBlocked(user)) {
       return null;
     }
     return this.buildAuthUser(user);
@@ -615,7 +693,7 @@ export class AuthService {
       include: { user: true },
     });
 
-    if (!stored || stored.expiresAt < new Date() || isAccountInactive(stored.user.status)) {
+    if (!stored || stored.expiresAt < new Date() || isAccountBlocked(stored.user)) {
       return null;
     }
 
@@ -667,6 +745,33 @@ export class AuthService {
       ),
       enrollments: enrollments.map((enrollment) => enrollment.course.slug),
     };
+  }
+
+  private async recordLogin(input: { userId?: string; success: boolean; method: string }) {
+    try {
+      await this.prisma.loginEvent.create({
+        data: { userId: input.userId, success: input.success, method: input.method },
+      });
+    } catch {
+      // A missing audit table must not block authentication.
+    }
+  }
+
+  private async issueVerificationLink(userId: string, email: string, name: string) {
+    const rawToken = randomBytes(32).toString('hex');
+    await this.prisma.passwordResetToken.create({
+      data: {
+        tokenHash: this.hashToken(rawToken),
+        userId,
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+      },
+    });
+    const appUrl = this.configService.get<string>('APP_URL', 'http://localhost:3000');
+    const url = `${(appUrl ?? 'http://localhost:3000').replace(/\/$/, '')}/verify-email?token=${rawToken}`;
+    const status = await this.emailService.sendPasswordReset({ id: userId, name, email }, url, 30);
+    if (status !== 'sent' && this.configService.get<string>('NODE_ENV') !== 'production') {
+      this.logger.warn(`[dev-only] SMTP unavailable — email verification link for ${email}: ${url}`);
+    }
   }
 
   /** HMAC-SHA256 with JWT_SECRET as pepper so a DB leak alone is not enough. */

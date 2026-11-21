@@ -13,5 +13,6 @@ import { AdminService } from './admin.service';
   imports: [MediaModule, SiteSettingsModule, PaymentsModule, AuthModule],
   controllers: [AdminController],
   providers: [AdminService, AdminAuditService, RolesGuard, AdminAccessGuard],
+  exports: [AdminAuditService],
 })
 export class AdminModule {}
