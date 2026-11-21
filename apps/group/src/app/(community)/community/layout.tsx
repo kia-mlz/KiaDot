@@ -12,8 +12,6 @@ export const metadata: Metadata = publicPageMetadata({
   path: '/community',
 });
 
-export const dynamic = 'force-dynamic';
-
 export default function CommunityLayout({ children }: { children: React.ReactNode }) {
   return <DepartmentGate department="community">{children}</DepartmentGate>;
 }

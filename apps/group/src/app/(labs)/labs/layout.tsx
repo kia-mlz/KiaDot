@@ -12,8 +12,6 @@ export const metadata: Metadata = publicPageMetadata({
   path: '/labs',
 });
 
-export const dynamic = 'force-dynamic';
-
 export default function LabsLayout({ children }: { children: React.ReactNode }) {
   return <DepartmentGate department="labs">{children}</DepartmentGate>;
 }
