@@ -16,7 +16,7 @@
     "build": "tsc -p tsconfig.catalog.json",
     "lint": "eslint . --config ../../eslint.config.mjs",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.catalog.json --noEmit --pretty false",
-    "test": "jest --config jest.catalog.config.js"
+    "test": "jest --config jest.catalog.config.mjs"
   },
   "dependencies": {
     "@kia./platform": "workspace:*",

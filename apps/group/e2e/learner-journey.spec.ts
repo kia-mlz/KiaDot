@@ -24,7 +24,8 @@ test.describe('Learner journey', () => {
     // Phone-first auth door — the single primary CTA on the minimal guest landing.
     const authCta = page.getByRole('link', { name: /^Start$/i });
     await expect(authCta).toBeVisible();
-    await expect(authCta).toHaveAttribute('href', '/education');
+    // Guests start phone OTP, then continue to the central home.
+    await expect(authCta).toHaveAttribute('href', '/education?next=%2Fhome');
     // Secondary door: staff/learners with a password sign in through /login.
     const emailCta = page.getByRole('link', { name: /Sign in with email/i });
     await expect(emailCta).toBeVisible();
@@ -71,7 +72,9 @@ test.describe('Multilingual UI', () => {
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('lang', 'fa');
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
-    await expect(page.getByRole('link', { name: /ورود \/ ثبت‌نام/i })).toBeVisible();
+    const start = page.getByRole('link', { name: /^شروع$/ });
+    await expect(start).toBeVisible();
+    await expect(start).toHaveAttribute('href', '/education?next=%2Fhome');
   });
 
   test('locale persists across reload for guests (cookie-driven)', async ({ page }) => {
@@ -81,7 +84,7 @@ test.describe('Multilingual UI', () => {
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
-    await expect(page.getByRole('link', { name: /Sign in \/ Sign up/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /^Start$/i })).toBeVisible();
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
@@ -91,7 +94,7 @@ test.describe('Multilingual UI', () => {
     await useLocale(page, 'en');
     await page.setViewportSize({ width: 400, height: 800 });
     await page.goto('/');
-    await expect(page.getByRole('link', { name: /Sign in \/ Sign up/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /^Start$/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /Sign in with email/i })).toBeVisible();
   });
 });

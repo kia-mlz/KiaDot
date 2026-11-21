@@ -29,3 +29,6 @@ overrides:
   qs: '>=6.16.1'
   proxy-addr: '>=2.0.8'
   source-map-js: '>=1.2.2'
+  # GHSA-7589-6fvf-x4pw: ReDoS in effect Schema.TemplateLiteral, pulled by @prisma/config.
+  # Stay on 3.x — @prisma/config does not load under effect 4.
+  effect: '>=3.22.1 <4'

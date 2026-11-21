@@ -114,7 +114,7 @@ export function gradeActivity(
   const sub = asRecord(submission);
 
   let correct = 0;
-  let maxScore = 0;
+  let maxScore: number;
 
   if (kind === 'quiz' || kind === 'multiple_choice') {
     const questions = questionsOf<ChoiceQuestion>(payload, 'questions');
