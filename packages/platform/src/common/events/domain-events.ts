@@ -61,12 +61,47 @@ export interface CourseCompletedEvent {
   courseSlug: string;
 }
 
-export type DomainEvent =
+export interface CertificateIssuedEvent {
+  name: 'academy.certificate.issued';
+  occurredAt: string;
+  userId: string;
+  courseId: string;
+  certificateId: string;
+}
+
+export interface LiveEventRegisteredEvent {
+  name: 'events.live.registered';
+  occurredAt: string;
+  userId: string;
+  eventId: string;
+}
+
+export interface LabResultPublishedEvent {
+  name: 'labs.result.published';
+  occurredAt: string;
+  userId: string;
+  projectId: string;
+  postId: string;
+}
+
+export interface CommunityPostCreatedEvent {
+  name: 'community.post.created';
+  occurredAt: string;
+  userId: string;
+  postId: string;
+}
+
+export type DomainEvent = (
   | UserRegisteredEvent
   | UserProfileCompletedEvent
   | PaymentCompletedEvent
   | EventRegistrationCreatedEvent
-  | CourseCompletedEvent;
+  | CourseCompletedEvent
+  | CertificateIssuedEvent
+  | LiveEventRegisteredEvent
+  | LabResultPublishedEvent
+  | CommunityPostCreatedEvent
+) & { dedupeKey?: string };
 
 export type DomainEventName = DomainEvent['name'];
 

@@ -380,6 +380,60 @@ Review the STAR method on [Wikipedia](https://en.wikipedia.org/wiki/Situation,_T
 
   console.log('Seeded test banks: personality, assessment, readiness');
   await seedEducationalGames(prisma);
+  await seedKiaDot(prisma, user.id);
+}
+
+async function seedKiaDot(prisma: PrismaClient, learnerId: string) {
+  const departments = [
+    ['academy', 'آکادمی', 'Academy', '/academy', '--dept-academy', 'دوره‌ها، آزمون و گواهی'],
+    ['work', 'کار', 'Work', '/work', '--dept-work', 'شغل، فریلنس و پروفایل تخصصی'],
+    ['material', 'متریال', 'Material', '/material', '--dept-material', 'منابع و فایل‌های آموزشی'],
+    ['labs', 'آزمایشگاه', 'Labs', '/labs', '--dept-labs', 'پژوهش، آزمایش و ایده'],
+    ['events', 'رویداد', 'Events', '/events', '--dept-events', 'رویداد، بلیت و حضور'],
+    ['community', 'جامعه', 'Community', '/community', '--dept-community', 'گفتگو، گروه‌ها و پیام'],
+  ] as const;
+  for (const [key, nameFa, nameEn, path, brandToken, descriptionFa] of departments) {
+    await prisma.departmentRegistry.upsert({
+      where: { key },
+      create: {
+        key,
+        enabled: true,
+        nameFa,
+        nameEn,
+        descriptionFa,
+        descriptionEn: nameEn,
+        path,
+        brandToken,
+        publishState: 'published',
+        featureFlags: {},
+      },
+      update: {},
+    });
+  }
+  await prisma.platformContent.upsert({
+    where: { id: 'default' },
+    create: {
+      id: 'default',
+      brandNameFa: 'کیادات',
+      brandNameEn: 'KiaDot',
+      sloganFa: 'یک اکوسیستم، فرصت‌های بی‌نهایت',
+      sloganEn: 'One ecosystem, infinite opportunities',
+      missionFa: 'کیادات آموزش، کار، منابع، آزمایشگاه، رویداد و جامعه را در یک هویت به هم وصل می‌کند.',
+      missionEn: 'KiaDot connects learning, work, resources, research, events, and community under one identity.',
+    },
+    update: {},
+  });
+  await prisma.departmentMembership.upsert({
+    where: { userId_department_role: { userId: learnerId, department: 'academy', role: 'STUDENT' } },
+    create: { userId: learnerId, department: 'academy', role: 'STUDENT' },
+    update: {},
+  });
+  await prisma.departmentMembership.upsert({
+    where: { userId_department_role: { userId: learnerId, department: 'work', role: 'FREELANCER' } },
+    create: { userId: learnerId, department: 'work', role: 'FREELANCER' },
+    update: {},
+  });
+  console.log('Seeded KiaDot registry, content, and learner department roles');
 }
 
 main()
