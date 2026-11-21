@@ -76,6 +76,7 @@ export class MaterialCatalogController {
   async stream(@CurrentUser() user: AuthUser, @Param('token') token: string, @Res() res: Response) {
     const file = await this.catalog.readDownload(token, user.id);
     res.setHeader('Content-Type', file.mime);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(file.filename)}"`);
     res.setHeader('Cache-Control', 'private, no-store');
     res.send(file.bytes);

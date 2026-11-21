@@ -10,18 +10,79 @@ import { join } from 'path';
 import { containsUnsafeText } from '@kia./shared';
 import { assertDepartmentEnabled, PrismaService, resolveUnderRoot } from '@kia./platform';
 
-const ALLOWED_MIME = new Set([
-  'application/pdf',
-  'image/png',
-  'image/jpeg',
-  'image/webp',
-  'audio/mpeg',
-  'audio/mp4',
-  'video/mp4',
-  'text/plain',
-  'application/zip',
-]);
 const MAX_BYTES = 25 * 1024 * 1024;
+
+/** Server-chosen extension for each allowed MIME. The client filename is never a path. */
+const MIME_EXTENSION: Record<string, string> = {
+  'application/pdf': '.pdf',
+  'image/png': '.png',
+  'image/jpeg': '.jpg',
+  'image/webp': '.webp',
+  'audio/mpeg': '.mp3',
+  'audio/mp4': '.m4a',
+  'video/mp4': '.mp4',
+  'text/plain': '.txt',
+  'application/zip': '.zip',
+};
+
+function startsWith(buffer: Buffer, bytes: number[]): boolean {
+  return bytes.every((byte, index) => buffer[index] === byte);
+}
+
+function magicMatches(mime: string, buffer: Buffer): boolean {
+  switch (mime) {
+    case 'application/pdf':
+      return buffer.length >= 5 && startsWith(buffer, [0x25, 0x50, 0x44, 0x46, 0x2d]);
+    case 'image/png':
+      return buffer.length >= 8 && startsWith(buffer, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    case 'image/jpeg':
+      return buffer.length >= 3 && startsWith(buffer, [0xff, 0xd8, 0xff]);
+    case 'image/webp':
+      return buffer.length >= 12 && startsWith(buffer, [0x52, 0x49, 0x46, 0x46]) && buffer.subarray(8, 12).toString('ascii') === 'WEBP';
+    case 'audio/mpeg':
+      return buffer.length >= 3 && (startsWith(buffer, [0x49, 0x44, 0x33]) || (buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0));
+    case 'audio/mp4':
+    case 'video/mp4':
+      return buffer.length >= 12 && buffer.subarray(4, 8).toString('ascii') === 'ftyp';
+    case 'application/zip':
+      return (
+        buffer.length >= 4 &&
+        (startsWith(buffer, [0x50, 0x4b, 0x03, 0x04]) ||
+          startsWith(buffer, [0x50, 0x4b, 0x05, 0x06]) ||
+          startsWith(buffer, [0x50, 0x4b, 0x07, 0x08]))
+      );
+    case 'text/plain': {
+      if (buffer.length === 0 || buffer.includes(0)) return false;
+      try {
+        const text = new TextDecoder('utf-8', { fatal: true }).decode(buffer);
+        return !/<\s*(?:script|html|iframe)\b/i.test(text);
+      } catch {
+        return false;
+      }
+    }
+    default:
+      return false;
+  }
+}
+
+/**
+ * Accept an upload only when the declared type, size, and leading bytes agree.
+ * The returned name is generated here. `originalname` is not used as a path or a stored name.
+ */
+export function inspectMaterialUpload(file: {
+  buffer?: Buffer;
+  mimetype?: string;
+  size?: number;
+}): { bytes: Buffer; mime: string; filename: string } {
+  const mime = file.mimetype ?? '';
+  const extension = MIME_EXTENSION[mime];
+  const size = file.size ?? file.buffer?.length ?? 0;
+  if (!file.buffer || !extension || size <= 0 || size > MAX_BYTES || file.buffer.length !== size) {
+    throw new BadRequestException('Unsupported file');
+  }
+  if (!magicMatches(mime, file.buffer)) throw new BadRequestException('Unsupported file');
+  return { bytes: Buffer.from(file.buffer), mime, filename: `material${extension}` };
+}
 
 function clean(value: string, max: number): string {
   const text = value.trim();
@@ -116,19 +177,17 @@ export class MaterialCatalogService {
   async addFile(actorId: string, role: string, resourceId: string, file: Express.Multer.File) {
     await this.gate();
     await this.mustAuthor(actorId, role, resourceId);
-    if (!file?.buffer) throw new BadRequestException('File is required');
-    if (!ALLOWED_MIME.has(file.mimetype) || file.size > MAX_BYTES) {
-      throw new BadRequestException('Unsupported file');
-    }
+    const accepted = inspectMaterialUpload(file);
     const storageKey = randomBytes(24).toString('hex');
+    if (!/^[a-f0-9]{48}$/.test(storageKey)) throw new BadRequestException('Invalid path');
     const path = resolveUnderRoot(this.root, storageKey);
-    writeFileSync(path, file.buffer);
+    writeFileSync(path, accepted.bytes);
     return this.prisma.materialFile.create({
       data: {
         resourceId,
-        filename: file.originalname.slice(0, 180),
-        mime: file.mimetype,
-        sizeBytes: file.size,
+        filename: accepted.filename,
+        mime: accepted.mime,
+        sizeBytes: accepted.bytes.length,
         storageKey,
       },
       select: { id: true, filename: true, mime: true, sizeBytes: true },
