@@ -1,6 +1,7 @@
 'use client';
 
 import { RequireAuth } from '@/components/auth/RequireAuth';
+import { CentralHome } from '@/components/home/CentralHome';
 import { DepartmentSolarSystem } from '@/components/hub/DepartmentSolarSystem';
 import { HOME_PATH } from '@/lib/postLoginPath';
 
@@ -20,6 +21,7 @@ export default function HomeGatePage() {
       <div className="page-content home-gate">
         <div className="container hub">
           <DepartmentSolarSystem />
+          <CentralHome />
         </div>
       </div>
     </RequireAuth>

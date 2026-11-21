@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { DepartmentGate } from '@/components/departments/DepartmentGate';
 import { messages } from '@/i18n/messages';
 import { DEFAULT_LOCALE } from '@/i18n/locales';
 import { publicPageMetadata } from '@/lib/seo';
@@ -11,6 +12,8 @@ export const metadata: Metadata = publicPageMetadata({
   path: '/events',
 });
 
+export const dynamic = 'force-dynamic';
+
 export default function EventsLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <DepartmentGate department="events">{children}</DepartmentGate>;
 }

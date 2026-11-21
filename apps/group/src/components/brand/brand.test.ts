@@ -66,9 +66,9 @@ const hits = (needle: string) => {
 
 describe('Kia brand', () => {
   it('uses locale-aware brand names', () => {
-    expect(BRAND_WORDMARK).toBe('Kia');
-    expect(fa.common.brand).toBe('کیا');
-    expect(en.common.brand).toBe('Kia');
+    expect(BRAND_WORDMARK).toBe('KiaDot');
+    expect(fa.common.brand).toBe('کیادات');
+    expect(en.common.brand).toBe('KiaDot');
   });
 
   it('never spells the obsolete KIA. wordmark in either dictionary', () => {
@@ -153,8 +153,8 @@ describe('Kia departments', () => {
       enDoors.communityTitle,
       enDoors.labsTitle,
     ]).toEqual(['Kia Academy', 'Kia Work', 'Kia Material', 'Kia Event', 'Kia Community', 'Kia Lab']);
-    expect(faDoors.heading).toBe('دپارتمان‌های کیا');
-    expect(enDoors.heading).toBe('Kia departments');
+    expect(faDoors.heading).toBe('دپارتمان‌های کیادات');
+    expect(enDoors.heading).toBe('KiaDot departments');
   });
 
   it('routes every planet title through the dictionary, never a literal', () => {
@@ -170,14 +170,17 @@ describe('Kia departments', () => {
     expect(hub).not.toContain('educationTitle');
   });
 
-  it('creates the two departments that did not exist', () => {
-    for (const slug of ['community', 'labs']) {
+  it('gives community and labs a working primary flow', () => {
+    const flows = [
+      ['community', '/community/posts'],
+      ['labs', '/labs/projects'],
+    ] as const;
+    for (const [slug, apiPath] of flows) {
       const page = path.join(WEB_ROOT, 'src', 'app', `(${slug})`, slug, 'page.tsx');
       const src = readFileSync(page, 'utf8');
-      expect(src, slug).toContain(`t('${slug}.title')`);
-      expect(src, slug).not.toContain(`t('${slug}.sub')`);
-      expect(src, slug).toContain(`t('${slug}.soon')`);
-      expect(src, slug).toContain('door--soon');
+      expect(src, slug).toContain('eco(');
+      expect(src, slug).toContain(apiPath);
+      expect(src, slug).not.toContain('door--soon');
     }
   });
 });

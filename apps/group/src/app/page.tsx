@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BrandMark } from '@/components/brand/BrandMark';
 import { LanguageSelector } from '@/components/layout/LanguageSelector';
 import { HOME_PATH } from '@/lib/postLoginPath';
@@ -17,10 +17,31 @@ import { useTheme } from '@/context/ThemeProvider';
  */
 export default function HomePage() {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { toggleTheme } = useTheme();
   const { user, learnerState, loading, isAuthenticated } = useAuth();
   const registered = Boolean(user?.profileComplete || learnerState?.profileComplete);
+  const [copy, setCopy] = useState<{
+    brandNameFa: string;
+    brandNameEn: string;
+    sloganFa: string;
+    sloganEn: string;
+    missionFa: string;
+    missionEn: string;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/content')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data) setCopy(data);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (loading || !isAuthenticated || !registered) return;
@@ -56,14 +77,17 @@ export default function HomePage() {
               landing-body), not as extra headings. */}
           <h1 className="landing-brand">
             <BrandMark className="landing-brand-mark" title="" />
-            {t('common.brand')}
+            {(locale === 'fa' ? copy?.brandNameFa : copy?.brandNameEn) || t('common.brand')}
           </h1>
-          <p className="landing-title">{t('common.tagline')}</p>
-          <p className="landing-body">{t('landing.heroBody')}</p>
+          <p className="landing-title">{(locale === 'fa' ? copy?.sloganFa : copy?.sloganEn) || t('landing.slogan')}</p>
+          <p className="landing-body">{(locale === 'fa' ? copy?.missionFa : copy?.missionEn) || t('landing.mission')}</p>
 
           <div className="hero-actions landing-min-actions">
-            <Link href="/education" className="btn btn--accent btn--lg hero-cta">
-              {t('landing.ctaAuth')}
+            <Link
+              href={isAuthenticated ? HOME_PATH : `/education?next=${encodeURIComponent(HOME_PATH)}`}
+              className="btn btn--accent btn--lg hero-cta"
+            >
+              {t('landing.ctaStart')}
             </Link>
           </div>
 

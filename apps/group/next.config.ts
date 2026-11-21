@@ -50,6 +50,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Playwright and curl hit 127.0.0.1; Next blocks dev assets from that host otherwise.
+  allowedDevOrigins: ['127.0.0.1', 'localhost'],
   // Workspace packages are transpiled from source (tsconfig paths map them to
   // packages/*/src), so shared tokens/types flow straight into the bundle.
   transpilePackages: [
