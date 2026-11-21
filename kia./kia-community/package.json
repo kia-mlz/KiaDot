@@ -2,5 +2,26 @@
   "name": "@kia./kia-community",
   "version": "1.0.0",
   "private": true,
-  "description": "kia. department package — جامعه (Members · Discussions · Groups · Mentorship · Networking) (folder scaffold; code lands here as the department grows)"
+  "description": "Kia Community — posts, groups, and messages.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint \"**/*.ts\" --config ../../eslint.config.mjs",
+    "typecheck": "tsc -p tsconfig.build.json --noEmit",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@kia./platform": "workspace:*",
+    "@kia./shared": "workspace:*",
+    "@nestjs/common": "^11.0.12",
+    "class-validator": "^0.15.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^26.4.0",
+    "jest": "^30.5.0",
+    "ts-jest": "^29.4.12",
+    "typescript": "^5.8.3"
+  }
 }

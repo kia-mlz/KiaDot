@@ -49,14 +49,14 @@ export default function EventsPage() {
             <span className="door-cta">{t('events.leaderboard.cta')}</span>
           </Link>
 
-          <div className="door door--soon tint--sky">
+          <Link href="/events/live" className="door tint--sky">
             <span className="door-icon" aria-hidden="true">
               <Video size={20} />
             </span>
             <h2 className="door-title">{t('events.webinars.title')}</h2>
-            <p className="door-desc">{t('events.webinars.desc')}</p>
-            <span className="door-cta">{t('events.webinars.cta')}</span>
-          </div>
+            <p className="door-desc">رویداد، ثبت‌نام، بلیت و چک‌این.</p>
+            <span className="door-cta">مشاهده رویدادها</span>
+          </Link>
         </div>
 
         <div className="hub-actions events-page__actions">

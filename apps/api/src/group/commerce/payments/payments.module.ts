@@ -13,6 +13,6 @@ import { PaymentsService } from './payments.service';
   imports: [StripeModule, EmailModule, SiteSettingsModule, CartModule, DiscountModule],
   controllers: [PaymentsController],
   providers: [PaymentsService, StripePaymentProvider, PaymentProviderRegistry],
-  exports: [PaymentsService],
+  exports: [PaymentsService, PaymentProviderRegistry],
 })
 export class PaymentsModule {}

@@ -30,6 +30,9 @@ async function bootstrap() {
   app.use('/api/uploads/tickets', (_req: Request, res: Response) => {
     res.status(401).json({ message: 'Use authenticated ticket attachment URLs' });
   });
+  app.use('/api/uploads/material', (_req: Request, res: Response) => {
+    res.status(401).json({ message: 'Use an authenticated download token for material files' });
+  });
   app.useStaticAssets(uploadsRoot, { prefix: '/api/uploads/' });
 
   app.use(

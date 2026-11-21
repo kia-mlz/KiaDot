@@ -1,11 +1,11 @@
 export const en = {
   meta: {
-    title: 'Kia — Adaptive Learning Platform',
+    title: 'KiaDot — One ecosystem, infinite opportunities',
     description:
-      'Persian-first learning academy for Iran: design materials studio, phone signup, personalized assessment, and guided courses.',
+      'KiaDot connects learning, work, resources, research, events, and community under one identity.',
   },
   common: {
-    brand: 'Kia',
+    brand: 'KiaDot',
     tagline: 'Learn · Work · Create · Connect · Grow',
     continue: 'Continue',
     loading: 'Loading…',
@@ -84,7 +84,10 @@ export const en = {
     nativeFa: 'فارسی',
   },
   landing: {
-    eyebrow: 'Kia',
+    eyebrow: 'KiaDot',
+    slogan: 'One ecosystem, infinite opportunities',
+    mission: 'KiaDot connects learning, work, resources, research, events, and community under one identity.',
+    ctaStart: 'Start',
     heroBody:
       'Kia is one integrated ecosystem, bringing education, work, materials, innovation, events and community together in a single place.',
     ctaMaterial: 'Material Studio',
@@ -382,7 +385,7 @@ export const en = {
   auth: {
     login: {
       eyebrow: 'Welcome back',
-      title: 'Sign in to Kia',
+      title: 'Sign in to KiaDot',
       sub: 'Continue your roadmap, courses, and bootcamp progress.',
       email: 'Email',
       password: 'Password',
@@ -653,7 +656,7 @@ export const en = {
       },
     },
     doors: {
-      heading: 'Kia departments',
+      heading: 'KiaDot departments',
       orbitsSub: 'The Kia ecosystem',
       academyTitle: 'Kia Academy',
       academyShort: 'Academy',

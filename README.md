@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="apps/group/public/brand/logo.svg" alt="Kia — کیا" width="140" />
+<img src="apps/group/public/brand/logo.svg" alt="KiaDot — کیادات" width="140" />
 
-# Kia · کیا
+# KiaDot · کیادات
 
 **Learn · Work · Create · Connect · Grow **
 
@@ -23,10 +23,11 @@
 
 ---
 
-Kia is a production-grade platform for Iranian talent, built around six
-departments: Kia Academy (learning), Kia Work (freelancing and hiring), Kia Material
-(design assets), Kia Event (contests, bootcamps, webinars), Kia Community (people)
-and Kia Lab (research and product).
+**KiaDot (کیادات)** is the public name of this platform. Packages, the database,
+and routes stay `kia` so existing data keeps working. KiaDot is a production-grade
+platform for Iranian talent, built around six departments: Kia Academy (learning),
+Kia Work (freelancing and hiring), Kia Material (design assets), Kia Event
+(contests, bootcamps, live events), Kia Community (people) and Kia Lab (research).
 Guests land on a minimal Persian hero, explore **Material Studio**, then follow a guided
 journey: phone OTP → profile → free goal assessment → free readiness test → personalized
 roadmap → paid bundle checkout → lesson player. The learner experience is entirely
@@ -77,7 +78,7 @@ Results (/readiness/results) ─► Roadmap (/roadmap) ──► Checkout ──
 | --- | --- |
 | Frontend | Next.js 16 (App Router), React 19, TypeScript, lucide-react, local Persian brand font (Pelak FA) |
 | Backend | NestJS 11, Passport JWT, class-validator, @nestjs/throttler, helmet |
-| Database | PostgreSQL 16 + Prisma ORM 7 (43 models · 13 enums · 19 migrations) |
+| Database | PostgreSQL 16 + Prisma ORM 7 (one schema, see [`docs/DATABASE.md`](docs/DATABASE.md)) |
 | Shared | `@kia./shared` — types, banks, grading, entitlements, validators (built first) |
 | Quality | ESLint flat config, Prettier, Vitest (shared) + Jest (api), Playwright e2e |
 | Infra | Docker multi-stage images, GitHub Actions CI, GH Pages static export (demo mode) |
@@ -104,20 +105,12 @@ KIA-GROUP-APP/
 │           ├── schema.prisma       # 43 models → generates client into platform
 │           └── migrations/         # init_baseline + hardening migrations
 ├── kia./                 # ★ THE SIX DEPARTMENTS — each a separate package
-│   ├── kia-academy/     # @kia./kia-academy — courses · course-exams ·
-│   │   │                #   learning-paths (roadmaps·assessments·readiness·test-banks)
-│   │   │                #   students (personality·progress); lessons/teachers/
-│   │   │                #   certificates = README scaffolds
-│   ├── kia-event/       # @kia./kia-event — competitions · challenges · bootcamps;
-│   │   │                #   events/webinars/workshops = README scaffolds
-│   ├── kia-work/        # @kia./kia-work — jobs · freelancing · projects ·
-│   │   │                #   employers · talents · contracts (folder scaffold)
-│   ├── kia-material/    # @kia./kia-material — Material Studio (resources/) +
-│   │   │                #   templates/assets/tools/materials scaffolds
-│   ├── kia-lab/         # @kia./kia-lab — research · innovation · products ·
-│   │   │                #   experiments · publications (folder scaffold)
-│   └── kia-community/   # @kia./kia-community — members · discussions · groups ·
-│                        #   mentorship · networking (folder scaffold)
+│   ├── kia-academy/     # courses, exams, games, activities, certificates, classes
+│   ├── kia-event/       # competitions, challenges, bootcamps, live events
+│   ├── kia-work/        # jobs, freelance projects, specialist profiles
+│   ├── kia-material/    # Material Studio UI + catalog API (./catalog)
+│   ├── kia-lab/         # research projects, experiments, ideas, reports
+│   └── kia-community/   # posts, groups, messages, moderation
 ├── packages/
 │   ├── brand/          # @kia./brand — the seven brand tokens (TS + CSS)
 │   ├── permissions/    # @kia./permissions — roles · admin matrix · dept taxonomy
@@ -136,11 +129,11 @@ KIA-GROUP-APP/
 | --- | --- | --- | --- |
 | Kia | `#FFC864` | `--group-gold` (reserved) | platform |
 | Kia Academy | `#6464FF` | `--dept-academy` | `kia./kia-academy/` · `app/(academy)` |
-| Kia Work | `#6492FF` | `--dept-work` | `kia./kia-work/` (scaffold) · `app/(work)` → `/freelance` |
-| Kia Material | `#148165` | `--dept-material` | `kia./kia-material/` (Material Studio) · `app/(material)` |
-| Kia Lab | `#28C793` | `--dept-labs` | `kia./kia-lab/` (scaffold) · `app/(labs)` |
+| Kia Work | `#6492FF` | `--dept-work` | `kia./kia-work/` · `app/(work)` → `/freelance` |
+| Kia Material | `#148165` | `--dept-material` | `kia./kia-material/` · `app/(material)` |
+| Kia Lab | `#28C793` | `--dept-labs` | `kia./kia-lab/` · `app/(labs)` |
 | Kia Event | `#E32B1B` | `--dept-events` | `kia./kia-event/` · `app/(events)` |
-| Kia Community | `#FF7344` | `--dept-community` | `kia./kia-community/` (scaffold) · `app/(community)` |
+| Kia Community | `#FF7344` | `--dept-community` | `kia./kia-community/` · `app/(community)` |
 
 Colours are defined **once** in [`packages/brand`](packages/brand) and pinned by
 tests on both sides (TypeScript tokens *and* the stylesheet that consumes them).
@@ -157,7 +150,10 @@ On-fill ink is chosen by measured contrast, never by hand.
   (search / commerce / identity) or
   **domain events** (`packages/platform/src/common/events` — `group.user.registered`,
   `group.user.profile_completed`, `group.payment.completed`,
-  `events.registration.created`, `academy.course.completed`).
+  `events.registration.created`, `academy.course.completed`,
+  `academy.certificate.issued`, `events.live.registered`,
+  `labs.result.published`, `community.post.created`).
+  Duplicate handling is skipped when `dedupeKey` is already in `DomainEventReceipt`.
 - Global search fans out to registered `SearchableProvider`s and tags every hit
   with its source department (`GET /api/search`).
 - One identity across all seven brands — see
@@ -192,13 +188,18 @@ pnpm install --frozen-lockfile        # also generates the Prisma client
 cp apps/api/.env.example apps/api/.env          # set DATABASE_URL + JWT secrets
 cp apps/group/.env.example apps/group/.env.local    # leave NEXT_PUBLIC_DEMO_MODE unset for real API
 
-pnpm docker:db                        # or run your own Postgres 16
+# Postgres 16. Docker is optional. On a host without Docker:
+#   sudo pg_ctlcluster 16 main start
 pnpm --filter @kia./shared build
-pnpm db:migrate                       # applies all 19 migrations (baseline + hardening)
-pnpm db:seed                          # catalog + banks + starter users
+pnpm db:migrate:deploy                # non-interactive; do not use migrate dev in CI
+pnpm db:seed                          # catalog + banks + KiaDot registry + starter users
 
-pnpm dev                              # web :3000 · api :3001 · health /api/health
+pnpm dev:local                        # web :3000 · api :3001 · health /api/health
 ```
+
+`pnpm dev` expects Infisical. Use `pnpm dev:local` when secrets are already in
+`apps/api/.env`. See [`docs/DEVELOPMENT_GUIDE.md`](docs/DEVELOPMENT_GUIDE.md) and
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 > 🔐 Development seeding creates starter accounts (including admin & learner) for local
 > testing only. **No real credentials are ever committed** — production passwords are

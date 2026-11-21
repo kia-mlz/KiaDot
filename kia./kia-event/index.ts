@@ -5,3 +5,4 @@
 export { CompetitionsModule } from './competitions/competitions/competitions.module';
 export { ChallengesModule } from './competitions/challenges/challenges.module';
 export { BootcampModule } from './bootcamps/bootcamp/bootcamp.module';
+export { LiveEventsModule } from './live/live-events.module';

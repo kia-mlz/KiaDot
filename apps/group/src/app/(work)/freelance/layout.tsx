@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { DepartmentGate } from '@/components/departments/DepartmentGate';
 import { messages } from '@/i18n/messages';
 import { DEFAULT_LOCALE } from '@/i18n/locales';
 import { publicPageMetadata } from '@/lib/seo';
@@ -11,6 +12,8 @@ export const metadata: Metadata = publicPageMetadata({
   path: '/freelance',
 });
 
+export const dynamic = 'force-dynamic';
+
 export default function FreelanceLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <DepartmentGate department="work">{children}</DepartmentGate>;
 }

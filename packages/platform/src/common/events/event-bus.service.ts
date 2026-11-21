@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
+import { PrismaService } from '../../prisma/prisma.service';
 import type { DomainEvent, DomainEventName, DomainEventHandler } from './domain-events';
 
 /**
@@ -23,6 +24,8 @@ export class EventBusService {
 
   private readonly handlers = new Map<DomainEventName, Set<DomainEventHandler>>();
 
+  constructor(@Optional() private readonly prisma?: PrismaService) {}
+
   /** Subscribe to a specific event name. Returns an unsubscribe function. */
   on<T extends DomainEvent>(name: T['name'], handler: DomainEventHandler<T>): () => void {
     let set = this.handlers.get(name);
@@ -40,6 +43,26 @@ export class EventBusService {
    * logged and isolated, so business transactions cannot be broken by events.
    */
   async publish<T extends DomainEvent>(event: T): Promise<void> {
+    if (event.dedupeKey && this.prisma) {
+      try {
+        await this.prisma.domainEventReceipt.create({
+          data: {
+            dedupeKey: event.dedupeKey,
+            name: event.name,
+            payload: event as object,
+          },
+        });
+      } catch (error) {
+        const code = (error as { code?: string }).code;
+        if (code === 'P2002') {
+          this.logger.log(`duplicate domain event skipped: ${event.dedupeKey}`);
+          return;
+        }
+        this.logger.error(
+          `domain event receipt failed: ${event.name}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
     this.logger.log(JSON.stringify({ event: event.name, ...event }));
     const set = this.handlers.get(event.name);
     if (!set || set.size === 0) return;

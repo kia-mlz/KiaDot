@@ -17,7 +17,12 @@
   },
   "dependencies": {
     "@kia./kia-academy": "workspace:*",
+    "@kia./kia-community": "workspace:*",
     "@kia./kia-event": "workspace:*",
+    "@kia./kia-lab": "workspace:*",
+    "@kia./kia-material": "workspace:*",
+    "@kia./kia-work": "workspace:*",
+    "@kia./permissions": "workspace:*",
     "@kia./platform": "workspace:*",
     "@kia./shared": "workspace:*",
     "@nest-lab/throttler-storage-redis": "^1.2.0",

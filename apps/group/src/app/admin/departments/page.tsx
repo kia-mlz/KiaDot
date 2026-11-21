@@ -20,6 +20,7 @@ import {
   hasDepartmentMetrics,
 } from '@/lib/adminDepartments';
 import { DEPARTMENT_WORKSPACES } from '@/lib/adminNav';
+import { DepartmentRegistryPanel } from '@/components/admin/DepartmentRegistryPanel';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
 
 /**
@@ -179,6 +180,7 @@ export default function AdminDepartmentsPage() {
         <h2 id="am-hub-title">{t('admin.nav.departments')}</h2>
         <p>{t('admin.departments.onePlatform')}</p>
       </section>
+      <DepartmentRegistryPanel />
 
       {failed > 0 ? (
         <p className="admin-departments-note" role="status">

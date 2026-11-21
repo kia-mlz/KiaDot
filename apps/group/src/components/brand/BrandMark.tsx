@@ -6,7 +6,7 @@ import { BRAND_MARK_PATHS, BRAND_MARK_VIEWBOX } from './brandMarkPaths';
 const LOGO_ASPECT = 497.37 / 512;
 
 /** Latin wordmark (English canonical). Locale UI uses `t('common.brand')` (Kia / کیا). */
-export const BRAND_WORDMARK = 'Kia';
+export const BRAND_WORDMARK = 'KiaDot';
 
 /** Kia mark — dual-path blue emblem from brand assets. */
 export function BrandMark({

@@ -19,12 +19,13 @@ test.describe('Learner journey', () => {
     await page.goto('/');
     // Minimal guest landing: brand wordmark as h1, five-pillar tagline as body
     // copy (not a heading — see landing-title), then phone + email auth doors.
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kia');
-    await expect(page.locator('.landing-title')).toContainText(/learn|work|create/i);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('KiaDot');
+    await expect(page.locator('.landing-title')).toContainText(/ecosystem/i);
     // Phone-first auth door — the single primary CTA on the minimal guest landing.
-    const authCta = page.getByRole('link', { name: /Sign in \/ Sign up/i });
+    const authCta = page.getByRole('link', { name: /^Start$/i });
     await expect(authCta).toBeVisible();
-    await expect(authCta).toHaveAttribute('href', '/education');
+    // Guests start phone OTP, then continue to the central home.
+    await expect(authCta).toHaveAttribute('href', '/education?next=%2Fhome');
     // Secondary door: staff/learners with a password sign in through /login.
     const emailCta = page.getByRole('link', { name: /Sign in with email/i });
     await expect(emailCta).toBeVisible();
@@ -33,7 +34,7 @@ test.describe('Learner journey', () => {
 
   test('login page loads for staff', async ({ page }) => {
     await page.goto('/login');
-    await expect(page.getByRole('heading', { name: /Sign in to Kia/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Sign in to KiaDot/i })).toBeVisible();
     await expect(page.getByLabel('Email')).toBeVisible();
     await expect(page.getByLabel(/Password/)).toBeVisible();
     await expect(page.getByRole('button', { name: /Sign in/i })).toBeVisible();
@@ -71,7 +72,9 @@ test.describe('Multilingual UI', () => {
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('lang', 'fa');
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
-    await expect(page.getByRole('link', { name: /ورود \/ ثبت‌نام/i })).toBeVisible();
+    const start = page.getByRole('link', { name: /^شروع$/ });
+    await expect(start).toBeVisible();
+    await expect(start).toHaveAttribute('href', '/education?next=%2Fhome');
   });
 
   test('locale persists across reload for guests (cookie-driven)', async ({ page }) => {
@@ -81,7 +84,7 @@ test.describe('Multilingual UI', () => {
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
-    await expect(page.getByRole('link', { name: /Sign in \/ Sign up/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /^Start$/i })).toBeVisible();
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
@@ -91,7 +94,7 @@ test.describe('Multilingual UI', () => {
     await useLocale(page, 'en');
     await page.setViewportSize({ width: 400, height: 800 });
     await page.goto('/');
-    await expect(page.getByRole('link', { name: /Sign in \/ Sign up/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /^Start$/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /Sign in with email/i })).toBeVisible();
   });
 });

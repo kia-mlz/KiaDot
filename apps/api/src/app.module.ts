@@ -9,7 +9,7 @@ import { AppController } from './app.controller';
 import { PrismaModule } from '@kia./platform';
 
 /*
- * kia. domain registry.
+ * kia. domain registry (KiaDot).
  *
  * The API is a modular monolith: every Nest module belongs to exactly one
  * department domain, and the folder layout mirrors that ownership:
@@ -52,6 +52,16 @@ import { ProgressModule } from '@kia./kia-academy';
 import { EducationalGamesModule } from '@kia./kia-academy';
 import { CompetitionsModule } from '@kia./kia-event';
 import { ChallengesModule } from '@kia./kia-event';
+import { LiveEventsModule } from '@kia./kia-event';
+import { AcademyActivitiesModule } from '@kia./kia-academy';
+import { WorkModule } from '@kia./kia-work';
+import { LabsModule } from '@kia./kia-lab';
+import { CommunityModule } from '@kia./kia-community';
+import { MaterialCatalogModule } from '@kia./kia-material/catalog';
+import { RegistryModule } from './group/registry/registry.module';
+import { ContractsModule } from './group/contracts/contracts.module';
+import { BillingModule } from './group/billing/billing.module';
+import { NotificationsModule } from './group/notifications/notifications.module';
 
 @Module({
   controllers: [AppController],
@@ -107,6 +117,16 @@ ConfigModule.forRoot({
     // ── KIA Event (competitions & challenges) ────────────────────────────
     CompetitionsModule,
     ChallengesModule,
+    LiveEventsModule,
+    AcademyActivitiesModule,
+    WorkModule,
+    LabsModule,
+    CommunityModule,
+    MaterialCatalogModule,
+    RegistryModule,
+    ContractsModule,
+    BillingModule,
+    NotificationsModule,
   ],
   providers: [
     {

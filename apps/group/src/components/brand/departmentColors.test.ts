@@ -180,16 +180,21 @@ describe('department marks in the markup', () => {
   });
 
   it('paints a department’s own tile in its own colour', () => {
-    // KIA Community’s page showed a `tint--violet` coming-soon tile — which is
-    // Material's violet — beside its own logo. A department page must not
-    // introduce a second department's colour.
+    // Community once showed a `tint--violet` coming-soon tile — Material's
+    // violet — beside its own logo. The live hubs paint `dept--*` tiles and
+    // must not borrow another department's tint or token.
     for (const slug of ['community', 'labs'] as const) {
       const src = readFileSync(
         path.join(appDir, `(${slug})`, slug, 'page.tsx'),
         'utf8',
       );
-      expect(src, slug).toContain(`door--soon dept--${slug}`);
-      expect(src, slug).not.toMatch(/door--soon tint--/);
+      expect(src, slug).toContain(`dept--${slug}`);
+      expect(src, slug).not.toMatch(/tint--/);
+      expect(src, slug).not.toMatch(/door--soon/);
+      for (const other of SLUGS) {
+        if (other === slug) continue;
+        expect(src, `${slug} must not wear ${other}`).not.toContain(`dept--${other}`);
+      }
     }
   });
 });

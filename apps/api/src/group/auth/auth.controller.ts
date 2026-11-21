@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Patch,
   Post,
   Req,
@@ -28,6 +29,7 @@ import { JwtAuthGuard } from '@kia./platform';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto, VerifyEmailDto } from './dto/register.dto';
 
 import { CompleteProfileDto, RequestOtpDto, VerifyOtpDto } from './dto/otp.dto';
 import { ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto } from './dto/password.dto';
@@ -35,6 +37,41 @@ import { ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto } from './dto/pa
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Post('register')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  register(@Body() dto: RegisterDto): Promise<{ id: string; emailVerified: false }> {
+    return this.authService.register(dto);
+  }
+
+  @Post('verify-email')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  verifyEmail(@Body() dto: VerifyEmailDto): Promise<{ emailVerified: true }> {
+    return this.authService.verifyEmail(dto.token);
+  }
+
+  @Get('sessions')
+  @UseGuards(JwtAuthGuard)
+  sessions(@CurrentUser() user: AuthUser) {
+    return this.authService.listSessions(user.id);
+  }
+
+  @Post('sessions/:id/revoke')
+  @UseGuards(JwtAuthGuard)
+  revokeSession(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.authService.revokeSession(user.id, id);
+  }
+
+  @Post('deactivate')
+  @UseGuards(JwtAuthGuard)
+  async deactivate(
+    @CurrentUser() user: AuthUser,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ deactivated: true }> {
+    const result = await this.authService.deactivate(user.id);
+    this.authService.clearRefreshCookie(res);
+    return result;
+  }
 
   @Post('login')
   @Throttle({ default: { limit: 5, ttl: 60_000 } })

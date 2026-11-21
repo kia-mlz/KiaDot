@@ -15,9 +15,9 @@ import { SITE_NAME, SITE_TITLE } from '@/lib/seo';
 /**
  * Inside a department the tab reads «… | Kia Academy» and the favicon is the
  * Kia emblem in that department's colour; on platform pages both fall back to
- * the Persian-first parent brand («کیا»).
+ * the Persian-first parent brand («کیادات»).
  *
- * 1. The suffix swap keys on the « | کیا» / « | Kia» markers.
+ * 1. The suffix swap keys on the « | کیادات» / « | Kia» markers.
  * 2. Favicon data URIs paint the shared mark paths with the department's
  *    official colour from @kia./brand — never a hex typed into
  *    the component.
@@ -34,14 +34,14 @@ const clientProviders = read('components', 'layout', 'ClientProviders.tsx');
 
 describe('departmentTabTitle', () => {
   it('swaps the Persian-first parent suffix for a department wordmark', () => {
-    expect(departmentTabTitle('دوره‌های موجود | کیا', 'Kia Academy')).toBe(
+    expect(departmentTabTitle('دوره‌های موجود | کیادات', 'Kia Academy')).toBe(
       'دوره‌های موجود | Kia Academy',
     );
-    expect(departmentTabTitle('پنل یادگیری | کیا', 'Kia Event')).toBe('پنل یادگیری | Kia Event');
+    expect(departmentTabTitle('پنل یادگیری | کیادات', 'Kia Event')).toBe('پنل یادگیری | Kia Event');
   });
 
   it('is idempotent when re-applied with the same department', () => {
-    const once = departmentTabTitle('دوره‌های موجود | کیا', 'Kia Academy');
+    const once = departmentTabTitle('دوره‌های موجود | کیادات', 'Kia Academy');
     expect(departmentTabTitle(once, 'Kia Academy')).toBe(once);
   });
 
@@ -52,11 +52,11 @@ describe('departmentTabTitle', () => {
   });
 
   it('restores the Persian-first parent suffix when leaving a department', () => {
-    expect(departmentTabTitle('دوره‌های موجود | Kia Academy', null)).toBe('دوره‌های موجود | کیا');
+    expect(departmentTabTitle('دوره‌های موجود | Kia Academy', null)).toBe('دوره‌های موجود | کیادات');
   });
 
   it('leaves an already-correct parent title alone', () => {
-    const parent = 'پنل یادگیری | کیا';
+    const parent = 'پنل یادگیری | کیادات';
     expect(departmentTabTitle(parent, null)).toBe(parent);
   });
 
@@ -66,9 +66,9 @@ describe('departmentTabTitle', () => {
   });
 
   it('keeps SITE_NAME as the Persian brand and BRAND_WORDMARK as Latin Kia', () => {
-    expect(SITE_NAME).toBe('کیا');
-    expect(BRAND_WORDMARK).toBe('Kia');
-    expect(` | ${SITE_NAME}`).toBe(' | کیا');
+    expect(SITE_NAME).toBe('کیادات');
+    expect(BRAND_WORDMARK).toBe('KiaDot');
+    expect(` | ${SITE_NAME}`).toBe(' | کیادات');
   });
 });
 

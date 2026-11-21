@@ -22,6 +22,7 @@ overrides:
   qs: '>=6.16.1'
   proxy-addr: '>=2.0.8'
   source-map-js: '>=1.2.2'
+  effect: '>=3.22.1 <4'
 
 importers:
 
@@ -51,9 +52,24 @@ importers:
       '@kia./kia-academy':
         specifier: workspace:*
         version: link:../../kia./kia-academy
+      '@kia./kia-community':
+        specifier: workspace:*
+        version: link:../../kia./kia-community
       '@kia./kia-event':
         specifier: workspace:*
         version: link:../../kia./kia-event
+      '@kia./kia-lab':
+        specifier: workspace:*
+        version: link:../../kia./kia-lab
+      '@kia./kia-material':
+        specifier: workspace:*
+        version: link:../../kia./kia-material
+      '@kia./kia-work':
+        specifier: workspace:*
+        version: link:../../kia./kia-work
+      '@kia./permissions':
+        specifier: workspace:*
+        version: link:../../packages/permissions
       '@kia./platform':
         specifier: workspace:*
         version: link:../../packages/platform
@@ -283,7 +299,36 @@ importers:
         specifier: ^5.8.3
         version: 5.9.3
 
-  kia./kia-community: {}
+  kia./kia-community:
+    dependencies:
+      '@kia./platform':
+        specifier: workspace:*
+        version: link:../../packages/platform
+      '@kia./shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@nestjs/common':
+        specifier: ^11.0.12
+        version: 11.2.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2)
+      class-validator:
+        specifier: ^0.15.1
+        version: 0.15.1
+    devDependencies:
+      '@types/jest':
+        specifier: ^30.0.0
+        version: 30.0.0
+      '@types/node':
+        specifier: ^26.4.0
+        version: 26.6.3
+      jest:
+        specifier: ^30.5.0
+        version: 30.5.0(@types/node@26.6.3)(supports-color@10.2.2)
+      ts-jest:
+        specifier: ^29.4.12
+        version: 29.4.12(@babel/core@7.29.7(supports-color@10.2.2))(@jest/transform@30.5.0(supports-color@10.2.2))(@jest/types@30.5.0)(babel-jest@30.5.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(esbuild@0.28.2)(jest-util@30.5.0)(jest@30.5.0(@types/node@26.6.3)(supports-color@10.2.2))(typescript@5.9.3)
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
 
   kia./kia-event:
     dependencies:
@@ -316,22 +361,113 @@ importers:
         specifier: ^5.8.3
         version: 5.9.3
 
-  kia./kia-lab: {}
-
-  kia./kia-material:
+  kia./kia-lab:
     dependencies:
+      '@kia./platform':
+        specifier: workspace:*
+        version: link:../../packages/platform
       '@kia./shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@nestjs/common':
+        specifier: ^11.0.12
+        version: 11.2.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2)
+      class-validator:
+        specifier: ^0.15.1
+        version: 0.15.1
     devDependencies:
-      '@types/react':
-        specifier: ^19.1.4
-        version: 19.2.18
+      '@types/jest':
+        specifier: ^30.0.0
+        version: 30.0.0
+      '@types/node':
+        specifier: ^26.4.0
+        version: 26.6.3
+      jest:
+        specifier: ^30.5.0
+        version: 30.5.0(@types/node@26.6.3)(supports-color@10.2.2)
+      ts-jest:
+        specifier: ^29.4.12
+        version: 29.4.12(@babel/core@7.29.7(supports-color@10.2.2))(@jest/transform@30.5.0(supports-color@10.2.2))(@jest/types@30.5.0)(babel-jest@30.5.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(esbuild@0.28.2)(jest-util@30.5.0)(jest@30.5.0(@types/node@26.6.3)(supports-color@10.2.2))(typescript@5.9.3)
       typescript:
         specifier: ^5.8.3
         version: 5.9.3
 
-  kia./kia-work: {}
+  kia./kia-material:
+    dependencies:
+      '@kia./platform':
+        specifier: workspace:*
+        version: link:../../packages/platform
+      '@kia./shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@nestjs/common':
+        specifier: ^11.0.12
+        version: 11.2.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2)
+      '@nestjs/platform-express':
+        specifier: ^11.0.12
+        version: 11.2.1(@nestjs/common@11.2.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@11.2.1)(supports-color@10.2.2)
+      class-validator:
+        specifier: ^0.15.1
+        version: 0.15.1
+      multer:
+        specifier: '>=2.5.0'
+        version: 2.5.0
+    devDependencies:
+      '@types/express':
+        specifier: ^5.0.1
+        version: 5.0.6
+      '@types/jest':
+        specifier: ^30.0.0
+        version: 30.0.0
+      '@types/multer':
+        specifier: ^2.2.0
+        version: 2.2.0
+      '@types/react':
+        specifier: ^19.1.4
+        version: 19.2.18
+      jest:
+        specifier: ^30.5.0
+        version: 30.5.0(supports-color@10.2.2)
+      ts-jest:
+        specifier: ^29.4.12
+        version: 29.4.12(@babel/core@7.29.7(supports-color@10.2.2))(@jest/transform@30.5.0(supports-color@10.2.2))(@jest/types@30.5.0)(babel-jest@30.5.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(esbuild@0.28.2)(jest-util@30.5.0)(jest@30.5.0(supports-color@10.2.2))(typescript@5.9.3)
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+
+  kia./kia-work:
+    dependencies:
+      '@kia./platform':
+        specifier: workspace:*
+        version: link:../../packages/platform
+      '@kia./shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@nestjs/common':
+        specifier: ^11.0.12
+        version: 11.2.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2)
+      class-transformer:
+        specifier: ^0.5.1
+        version: 0.5.1
+      class-validator:
+        specifier: ^0.15.1
+        version: 0.15.1
+    devDependencies:
+      '@types/jest':
+        specifier: ^30.0.0
+        version: 30.0.0
+      '@types/node':
+        specifier: ^26.4.0
+        version: 26.6.3
+      jest:
+        specifier: ^30.5.0
+        version: 30.5.0(@types/node@26.6.3)(supports-color@10.2.2)
+      ts-jest:
+        specifier: ^29.4.12
+        version: 29.4.12(@babel/core@7.29.7(supports-color@10.2.2))(@jest/transform@30.5.0(supports-color@10.2.2))(@jest/types@30.5.0)(babel-jest@30.5.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(esbuild@0.28.2)(jest-util@30.5.0)(jest@30.5.0(@types/node@26.6.3)(supports-color@10.2.2))(typescript@5.9.3)
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
 
   packages/brand:
     devDependencies:
@@ -2917,8 +3053,8 @@ packages:
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
 
-  effect@3.20.0:
-    resolution: {integrity: sha512-qMLfDJscrNG8p/aw+IkT9W7fgj50Z4wG5bLBy0Txsxz8iUHjDIkOgO3SV0WZfnQbNG2VJYb0b+rDLMrhM4+Krw==}
+  effect@3.22.5:
+    resolution: {integrity: sha512-AdIU4llI19BzhJ4xUBZix7kS8oiYSlCsJ61j3UM3UyJw9ecDrsrrweDFm/Ku1nHbJWMLoynK+1Me4it3Zkmjpw==}
 
   electron-to-chromium@1.5.411:
     resolution: {integrity: sha512-gglkxzokjHfawpGxq75XdBV2/l3BAPzrsMs70qgaZdTW5rpV1tC4MdgJVP9fN126bODA4ZJQkn1wryEzJyQXIg==}
@@ -6237,7 +6373,7 @@ snapshots:
     dependencies:
       c12: 3.3.4(magicast@0.5.5)
       deepmerge-ts: 8.0.2
-      effect: 3.20.0
+      effect: 3.22.5
       empathic: 2.0.0
     transitivePeerDependencies:
       - magicast
@@ -7535,7 +7671,7 @@ snapshots:
 
   ee-first@1.1.1: {}
 
-  effect@3.20.0:
+  effect@3.22.5:
     dependencies:
       '@standard-schema/spec': 1.1.0
       fast-check: 3.23.2
@@ -8151,6 +8287,25 @@ snapshots:
       - supports-color
       - ts-node
 
+  jest-cli@30.5.0(supports-color@10.2.2):
+    dependencies:
+      '@jest/core': 30.5.0(supports-color@10.2.2)
+      '@jest/test-result': 30.5.0
+      '@jest/types': 30.5.0
+      chalk: 4.1.2
+      exit-x: 0.2.2
+      import-local: 3.2.0
+      jest-config: 30.5.0(supports-color@10.2.2)
+      jest-util: 30.5.0
+      jest-validate: 30.5.0
+      yargs: 17.7.3
+    transitivePeerDependencies:
+      - '@types/node'
+      - babel-plugin-macros
+      - esbuild-register
+      - supports-color
+      - ts-node
+
   jest-config@30.5.0(@types/node@26.4.0)(supports-color@10.2.2)(ts-node@10.9.2(@types/node@26.4.0)(typescript@5.9.3)):
     dependencies:
       '@babel/core': 7.29.7(supports-color@10.2.2)
@@ -8242,6 +8397,35 @@ snapshots:
     optionalDependencies:
       '@types/node': 26.6.3
       ts-node: 10.9.2(@types/node@26.4.0)(typescript@5.9.3)
+    transitivePeerDependencies:
+      - babel-plugin-macros
+      - supports-color
+
+  jest-config@30.5.0(supports-color@10.2.2):
+    dependencies:
+      '@babel/core': 7.29.7(supports-color@10.2.2)
+      '@jest/get-type': 30.5.0
+      '@jest/pattern': 30.5.0
+      '@jest/test-sequencer': 30.5.0
+      '@jest/types': 30.5.0
+      babel-jest: 30.5.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2)
+      chalk: 4.1.2
+      ci-info: 4.4.0
+      deepmerge: 4.3.1
+      glob: 13.0.6
+      graceful-fs: 4.2.11
+      jest-circus: 30.5.0(supports-color@10.2.2)
+      jest-docblock: 30.5.0
+      jest-environment-node: 30.5.0
+      jest-regex-util: 30.5.0
+      jest-resolve: 30.5.0
+      jest-runner: 30.5.0(supports-color@10.2.2)
+      jest-util: 30.5.0
+      jest-validate: 30.5.0
+      parse-json: 5.2.0
+      pretty-format: 30.5.0
+      slash: 3.0.0
+      strip-json-comments: 3.1.1
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color
@@ -8527,6 +8711,19 @@ snapshots:
       '@jest/types': 30.5.0
       import-local: 3.2.0
       jest-cli: 30.5.0(@types/node@26.6.3)(supports-color@10.2.2)
+    transitivePeerDependencies:
+      - '@types/node'
+      - babel-plugin-macros
+      - esbuild-register
+      - supports-color
+      - ts-node
+
+  jest@30.5.0(supports-color@10.2.2):
+    dependencies:
+      '@jest/core': 30.5.0(supports-color@10.2.2)
+      '@jest/types': 30.5.0
+      import-local: 3.2.0
+      jest-cli: 30.5.0(supports-color@10.2.2)
     transitivePeerDependencies:
       - '@types/node'
       - babel-plugin-macros
@@ -9582,6 +9779,27 @@ snapshots:
       fast-json-stable-stringify: 2.1.0
       handlebars: 4.7.9
       jest: 30.5.0(@types/node@26.6.3)(supports-color@10.2.2)
+      json5: 2.2.3
+      lodash.memoize: 4.1.2
+      make-error: 1.3.6
+      semver: 7.8.5
+      type-fest: 4.41.0
+      typescript: 5.9.3
+      yargs-parser: 21.1.1
+    optionalDependencies:
+      '@babel/core': 7.29.7(supports-color@10.2.2)
+      '@jest/transform': 30.5.0(supports-color@10.2.2)
+      '@jest/types': 30.5.0
+      babel-jest: 30.5.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2)
+      esbuild: 0.28.2
+      jest-util: 30.5.0
+
+  ts-jest@29.4.12(@babel/core@7.29.7(supports-color@10.2.2))(@jest/transform@30.5.0(supports-color@10.2.2))(@jest/types@30.5.0)(babel-jest@30.5.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(esbuild@0.28.2)(jest-util@30.5.0)(jest@30.5.0(supports-color@10.2.2))(typescript@5.9.3):
+    dependencies:
+      bs-logger: 0.2.6
+      fast-json-stable-stringify: 2.1.0
+      handlebars: 4.7.9
+      jest: 30.5.0(supports-color@10.2.2)
       json5: 2.2.3
       lodash.memoize: 4.1.2
       make-error: 1.3.6

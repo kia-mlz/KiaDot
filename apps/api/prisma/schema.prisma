@@ -23,15 +23,30 @@ generator client {
 //                        Order(+Item), Payment, PaymentWebhookEvent, Invoice,
 //                        Entitlement, LearnerWallet(+Transaction),
 //                        SupportTicket(+Reply/Attachment), LearnerMessage,
-//                        LearnerTodo
+//                        LearnerTodo, DepartmentRegistry, PlatformContent,
+//                        DepartmentMembership, LoginEvent, UserSkill,
+//                        Notification, DomainEventReceipt, DepartmentInvoice
 //   ACADEMY              Assessment, Roadmap, ReadinessTest, PersonalityResult,
 //                        ExamAttempt, Course, Chapter, Lesson, CourseExam(+Attempt),
 //                        CourseAttachment, Enrollment, LessonProgress,
 //                        EducationalGame, GameStage, GameAttempt, UserGameProgress,
 //                        UserXpTransaction, Achievement, UserAchievement,
-//                        LearnerGameStats, BootcampProfile
+//                        LearnerGameStats, BootcampProfile, Certificate,
+//                        ClassSession, ClassAttendance, LearningActivity(+Attempt),
+//                        LessonMaterialLink (opaque material id, no cross-FK)
+//   WORK                 SpecialistProfile, JobPost, JobApplication,
+//                        FreelanceProject, FreelanceProposal, FreelanceMilestone,
+//                        WorkReview
+//   MATERIAL             MaterialResource, MaterialFile, MaterialDownloadToken
+//   LABS                 LabProject, LabMember, LabPhase, LabExperiment, LabIdea,
+//                        LabTask, LabReport
 //   EVENTS               Challenge, ChallengeSubmission, Competition,
-//                        CompetitionRegistration
+//                        CompetitionRegistration, LiveEvent, EventTicketType,
+//                        EventSignup, EventSpeaker, EventAgendaItem
+//   COMMUNITY            CommunityPost, CommunityComment, CommunityLike,
+//                        CommunitySave, CommunityFollow, CommunityGroup,
+//                        CommunityGroupMember, CommunityMessage, CommunityBlock,
+//                        CommunityReport, CommunityShare, CommunityRestriction
 // =============================================================================
 
 // Connection URL lives in prisma.config.ts (Prisma 7 no longer accepts
@@ -189,6 +204,25 @@ model User {
   competitionRegs        CompetitionRegistration[]
   wallet                 LearnerWallet?
   passwordResetTokens    PasswordResetToken[]
+  memberships            DepartmentMembership[]
+  loginEvents            LoginEvent[]
+  skills                 UserSkill[]
+  notifications          Notification[]
+  departmentInvoices     DepartmentInvoice[]
+  certificates           Certificate[]
+  specialistProfile      SpecialistProfile?
+  jobPosts               JobPost[]
+  jobApplications        JobApplication[]
+  freelanceOwned         FreelanceProject[]       @relation("FreelanceOwner")
+  freelanceHired         FreelanceProject[]       @relation("FreelanceHire")
+  freelanceProposals     FreelanceProposal[]
+  workReviews            WorkReview[]
+  materialResources      MaterialResource[]
+  labProjectsLed         LabProject[]
+  labIdeas               LabIdea[]
+  communityPosts         CommunityPost[]
+  classAttendances       ClassAttendance[]
+  activityAttempts       LearningActivityAttempt[]
 
   @@index([status])
   @@index([role, createdAt])
@@ -617,13 +651,16 @@ model Course {
   comingSoon    Boolean  @default(false)
   createdAt     DateTime @default(now())
 
-  lessons     Lesson[]
-  chapters    Chapter[]
-  courseExams CourseExam[]
-  enrollments Enrollment[]
-  attachments CourseAttachment[]
-  tickets     SupportTicket[]
-  cartItems   CartItem[]
+  lessons       Lesson[]
+  chapters      Chapter[]
+  courseExams   CourseExam[]
+  enrollments   Enrollment[]
+  attachments   CourseAttachment[]
+  tickets       SupportTicket[]
+  cartItems     CartItem[]
+  certificates  Certificate[]
+  classSessions ClassSession[]
+  activities    LearningActivity[]
 }
 
 enum CourseExamKind {
@@ -722,10 +759,11 @@ model Lesson {
   chapterId   String?
   chapter     Chapter? @relation(fields: [chapterId], references: [id], onDelete: SetNull)
 
-  progress LessonProgress[]
-  games    EducationalGame[]
-
-  examsAfter CourseExam[]
+  progress     LessonProgress[]
+  games        EducationalGame[]
+  examsAfter   CourseExam[]
+  materialLinks LessonMaterialLink[]
+  activities   LearningActivity[]
 
   @@unique([courseId, slug])
   @@index([courseId, sortOrder])
@@ -1284,4 +1322,646 @@ model LearnerGameStats {
   updatedAt       DateTime @updatedAt
 
   @@index([xp])
+}
+
+// =============================================================================
+// GROUP — KiaDot registry, identity extras, billing, notifications
+// =============================================================================
+
+/// Enable/disable a department without taking down the rest of the platform.
+model DepartmentRegistry {
+  key           String   @id
+  enabled       Boolean  @default(true)
+  nameFa        String
+  nameEn        String
+  descriptionFa String
+  descriptionEn String
+  path          String
+  publishState  String   @default("published")
+  /// CSS variable from @kia./brand, never a hard-coded hex.
+  brandToken    String
+  logoUrl       String?
+  featureFlags  Json     @default("{}")
+  updatedAt     DateTime @updatedAt
+}
+
+/// Public marketing copy edited from admin (slogan, mission, brand names).
+model PlatformContent {
+  id          String   @id @default("default")
+  brandNameFa String   @default("کیادات")
+  brandNameEn String   @default("KiaDot")
+  sloganFa    String
+  sloganEn    String
+  missionFa   String
+  missionEn   String
+  updatedAt   DateTime @updatedAt
+}
+
+model DepartmentMembership {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department String
+  role       String
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, department, role])
+  @@index([department, role])
+}
+
+model LoginEvent {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  success   Boolean
+  method    String
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model UserSkill {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name   String
+
+  @@unique([userId, name])
+}
+
+model Notification {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  body       String
+  href       String?
+  department String?
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId, createdAt])
+}
+
+/// Idempotency receipt for domain events that carry a dedupeKey.
+model DomainEventReceipt {
+  id        String   @id @default(cuid())
+  dedupeKey String   @unique
+  name      String
+  payload   Json
+  createdAt DateTime @default(now())
+}
+
+/// Department charges (material, tickets, freelance). Paid only after provider verify.
+model DepartmentInvoice {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  department   String
+  resourceType String
+  resourceId   String
+  title        String
+  amountIrr    Int
+  discountIrr  Int       @default(0)
+  status       String    @default("pending")
+  provider     String?
+  gatewayRef   String?
+  discountCode String?
+  accessUntil  DateTime?
+  paidAt       DateTime?
+  refundedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userId, status])
+  @@index([department, resourceId])
+}
+
+// =============================================================================
+// ACADEMY — certificates, sessions, activities, material links
+// =============================================================================
+
+model Certificate {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId String
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  code     String   @unique
+  issuedAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+}
+
+model ClassSession {
+  id          String    @id @default(cuid())
+  courseId    String
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  startsAt    DateTime
+  endsAt      DateTime?
+  timezone    String    @default("Asia/Tehran")
+  provider    String    @default("unconfigured")
+  joinUrl     String?
+  createdById String
+  createdAt   DateTime  @default(now())
+  attendance  ClassAttendance[]
+}
+
+model ClassAttendance {
+  id        String       @id @default(cuid())
+  sessionId String
+  session   ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt  DateTime     @default(now())
+
+  @@unique([sessionId, userId])
+}
+
+model LearningActivity {
+  id           String   @id @default(cuid())
+  courseId     String?
+  course       Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  lessonId     String?
+  lesson       Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  chapterId    String?
+  title        String
+  kind         String
+  payload      Json
+  timeLimitSec Int      @default(0)
+  published    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  attempts     LearningActivityAttempt[]
+}
+
+model LearningActivityAttempt {
+  id          String           @id @default(cuid())
+  activityId  String
+  activity    LearningActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score       Int
+  maxScore    Int
+  correct     Int
+  wrong       Int
+  elapsedSec  Int              @default(0)
+  createdAt   DateTime         @default(now())
+
+  @@index([userId, activityId])
+}
+
+/// Opaque material id — Academy does not query Material tables.
+model LessonMaterialLink {
+  id                 String   @id @default(cuid())
+  lessonId           String
+  lesson             Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  materialResourceId String
+  createdById        String
+  createdAt          DateTime @default(now())
+
+  @@unique([lessonId, materialResourceId])
+}
+
+// =============================================================================
+// WORK
+// =============================================================================
+
+model SpecialistProfile {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  headline   String   @default("")
+  bio        String   @default("")
+  rateIrr    Int      @default(0)
+  services   String   @default("")
+  experience String   @default("")
+  portfolio  String   @default("")
+  resumeUrl  String?
+  published  Boolean  @default(false)
+  updatedAt  DateTime @updatedAt
+  reviews    WorkReview[]
+}
+
+model JobPost {
+  id           String           @id @default(cuid())
+  ownerId      String
+  owner        User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  title        String
+  category     String
+  description  String
+  location     String           @default("")
+  published    Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  applications JobApplication[]
+
+  @@index([published, category])
+}
+
+model JobApplication {
+  id        String   @id @default(cuid())
+  jobId     String
+  job       JobPost  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cover     String   @default("")
+  status    String   @default("applied")
+  createdAt DateTime @default(now())
+
+  @@unique([jobId, userId])
+}
+
+model FreelanceProject {
+  id         String               @id @default(cuid())
+  ownerId    String
+  owner      User                 @relation("FreelanceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  title      String
+  brief      String
+  budgetIrr  Int
+  deadline   DateTime?
+  status     String               @default("open")
+  hireUserId String?
+  hire       User?                @relation("FreelanceHire", fields: [hireUserId], references: [id], onDelete: SetNull)
+  createdAt  DateTime             @default(now())
+  proposals  FreelanceProposal[]
+  milestones FreelanceMilestone[]
+}
+
+model FreelanceProposal {
+  id        String            @id @default(cuid())
+  projectId String
+  project   FreelanceProject  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pitch     String
+  amountIrr Int
+  status    String            @default("submitted")
+  createdAt DateTime          @default(now())
+
+  @@unique([projectId, userId])
+}
+
+model FreelanceMilestone {
+  id        String           @id @default(cuid())
+  projectId String
+  project   FreelanceProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title     String
+  amountIrr Int
+  status    String           @default("pending")
+  dueAt     DateTime?
+}
+
+model WorkReview {
+  id        String             @id @default(cuid())
+  profileId String
+  profile   SpecialistProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  rating    Int
+  body      String
+  createdAt DateTime           @default(now())
+
+  @@index([profileId])
+}
+
+// =============================================================================
+// MATERIAL — private files are never public URLs
+// =============================================================================
+
+model MaterialResource {
+  id          String         @id @default(cuid())
+  slug        String         @unique
+  title       String
+  description String
+  category    String
+  tags        String[]
+  kind        String
+  access      String         @default("free")
+  priceIrr    Int            @default(0)
+  authorId    String
+  author      User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  published   Boolean        @default(false)
+  version     Int            @default(1)
+  viewCount   Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  files       MaterialFile[]
+
+  @@index([published, category])
+}
+
+model MaterialFile {
+  id         String                 @id @default(cuid())
+  resourceId String
+  resource   MaterialResource       @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  filename   String
+  mime       String
+  sizeBytes  Int
+  storageKey String                 @unique
+  createdAt  DateTime               @default(now())
+  tokens     MaterialDownloadToken[]
+}
+
+model MaterialDownloadToken {
+  id        String       @id @default(cuid())
+  fileId    String
+  file      MaterialFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  userId    String
+  tokenHash String       @unique
+  expiresAt DateTime
+  createdAt DateTime     @default(now())
+}
+
+// =============================================================================
+// LABS
+// =============================================================================
+
+model LabProject {
+  id          String          @id @default(cuid())
+  title       String
+  problem     String
+  method      String
+  leadId      String
+  lead        User            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  status      String          @default("active")
+  visibility  String          @default("private")
+  schedule    String          @default("")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  members     LabMember[]
+  phases      LabPhase[]
+  experiments LabExperiment[]
+  tasks       LabTask[]
+  reports     LabReport[]
+}
+
+model LabMember {
+  id        String     @id @default(cuid())
+  projectId String
+  project   LabProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  role      String     @default("member")
+
+  @@unique([projectId, userId])
+}
+
+model LabPhase {
+  id        String     @id @default(cuid())
+  projectId String
+  project   LabProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title     String
+  startsAt  DateTime?
+  endsAt    DateTime?
+  status    String     @default("planned")
+}
+
+model LabExperiment {
+  id          String     @id @default(cuid())
+  projectId   String
+  project     LabProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  hypothesis  String
+  results     String     @default("")
+  version     Int        @default(1)
+  report      String     @default("")
+  createdById String
+  createdAt   DateTime   @default(now())
+}
+
+model LabIdea {
+  id        String   @id @default(cuid())
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  score     Int      @default(0)
+  status    String   @default("submitted")
+  projectId String?
+  createdAt DateTime @default(now())
+}
+
+model LabTask {
+  id         String     @id @default(cuid())
+  projectId  String
+  project    LabProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title      String
+  assigneeId String?
+  status     String     @default("todo")
+}
+
+model LabReport {
+  id        String     @id @default(cuid())
+  projectId String
+  project   LabProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  authorId  String
+  body      String
+  createdAt DateTime   @default(now())
+}
+
+// =============================================================================
+// EVENTS — scheduled gatherings (distinct from competitions)
+// =============================================================================
+
+model LiveEvent {
+  id          String            @id @default(cuid())
+  slug        String            @unique
+  title       String
+  coverUrl    String?
+  category    String
+  organizerId String
+  startsAt    DateTime
+  endsAt      DateTime?
+  timezone    String            @default("Asia/Tehran")
+  venue       String            @default("")
+  capacity    Int               @default(0)
+  published   Boolean           @default(false)
+  isFree      Boolean           @default(true)
+  priceIrr    Int               @default(0)
+  rules       String            @default("")
+  joinUrl     String?
+  provider    String            @default("unconfigured")
+  createdAt   DateTime          @default(now())
+  tickets     EventTicketType[]
+  signups     EventSignup[]
+  speakers    EventSpeaker[]
+  agenda      EventAgendaItem[]
+
+  @@index([published, startsAt])
+}
+
+model EventTicketType {
+  id       String    @id @default(cuid())
+  eventId  String
+  event    LiveEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name     String
+  priceIrr Int       @default(0)
+  capacity Int       @default(0)
+  sold     Int       @default(0)
+}
+
+model EventSignup {
+  id           String    @id @default(cuid())
+  eventId      String
+  event        LiveEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId       String
+  ticketTypeId String?
+  status       String    @default("pending")
+  code         String    @unique
+  discountCode String?
+  createdAt    DateTime  @default(now())
+
+  @@unique([eventId, userId])
+}
+
+model EventSpeaker {
+  id      String    @id @default(cuid())
+  eventId String
+  event   LiveEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name    String
+  bio     String    @default("")
+}
+
+model EventAgendaItem {
+  id       String    @id @default(cuid())
+  eventId  String
+  event    LiveEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  title    String
+  startsAt DateTime
+  endsAt   DateTime?
+}
+
+// =============================================================================
+// COMMUNITY
+// =============================================================================
+
+model CommunityPost {
+  id         String              @id @default(cuid())
+  authorId   String
+  author     User                @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body       String
+  linkUrl    String?
+  hashtags   String[]
+  visibility String              @default("public")
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+  deletedAt  DateTime?
+  comments   CommunityComment[]
+  likes      CommunityLike[]
+  saves      CommunitySave[]
+  share      CommunityShare?
+
+  @@index([createdAt])
+}
+
+model CommunityComment {
+  id        String        @id @default(cuid())
+  postId    String
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  parentId  String?
+  body      String
+  createdAt DateTime      @default(now())
+  deletedAt DateTime?
+
+  @@index([postId])
+}
+
+model CommunityLike {
+  id     String        @id @default(cuid())
+  postId String
+  post   CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@unique([postId, userId])
+}
+
+model CommunitySave {
+  id     String        @id @default(cuid())
+  postId String
+  post   CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@unique([postId, userId])
+}
+
+model CommunityFollow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+}
+
+model CommunityGroup {
+  id         String                 @id @default(cuid())
+  slug       String                 @unique
+  name       String
+  rules      String                 @default("")
+  visibility String                 @default("public")
+  ownerId    String
+  createdAt  DateTime               @default(now())
+  members    CommunityGroupMember[]
+}
+
+model CommunityGroupMember {
+  id      String         @id @default(cuid())
+  groupId String
+  group   CommunityGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId  String
+  role    String         @default("member")
+
+  @@unique([groupId, userId])
+}
+
+model CommunityMessage {
+  id          String    @id @default(cuid())
+  senderId    String
+  recipientId String?
+  groupId     String?
+  body        String
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([recipientId, readAt])
+  @@index([groupId, createdAt])
+}
+
+model CommunityBlock {
+  id        String @id @default(cuid())
+  blockerId String
+  blockedId String
+
+  @@unique([blockerId, blockedId])
+}
+
+model CommunityReport {
+  id         String   @id @default(cuid())
+  reporterId String
+  targetType String
+  targetId   String
+  reason     String
+  status     String   @default("open")
+  createdAt  DateTime @default(now())
+
+  @@index([status, createdAt])
+}
+
+model CommunityShare {
+  id         String        @id @default(cuid())
+  postId     String        @unique
+  post       CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  sourceType String
+  sourceId   String
+  createdAt  DateTime      @default(now())
+
+  @@unique([sourceType, sourceId])
+}
+
+model CommunityRestriction {
+  userId         String    @id
+  muted          Boolean   @default(false)
+  suspendedUntil DateTime?
+  reason         String    @default("")
 }
