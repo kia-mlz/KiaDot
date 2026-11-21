@@ -6,9 +6,9 @@
 
 **Learn · Work · Create · Connect · Grow **
 
-[![CI](https://github.com/kia-mlz/KIA-GROUP/actions/workflows/ci.yml/badge.svg)](https://github.com/kia-mlz/KIA-GROUP/actions/workflows/ci.yml)
-[![E2E](https://github.com/kia-mlz/KIA-GROUP/actions/workflows/e2e.yml/badge.svg)](https://github.com/kia-mlz/KIA-GROUP/actions/workflows/e2e.yml)
-[![Security](https://github.com/kia-mlz/KIA-GROUP/actions/workflows/security.yml/badge.svg)](https://github.com/kia-mlz/KIA-GROUP/actions/workflows/security.yml)
+[![CI](https://github.com/kia-mlz/KiaDot/actions/workflows/ci.yml/badge.svg)](https://github.com/kia-mlz/KiaDot/actions/workflows/ci.yml)
+[![E2E](https://github.com/kia-mlz/KiaDot/actions/workflows/e2e.yml/badge.svg)](https://github.com/kia-mlz/KiaDot/actions/workflows/e2e.yml)
+[![Security](https://github.com/kia-mlz/KiaDot/actions/workflows/security.yml/badge.svg)](https://github.com/kia-mlz/KiaDot/actions/workflows/security.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A522.13-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org)
 [![pnpm](https://img.shields.io/badge/pnpm-monorepo-F69220?logo=pnpm&logoColor=white)](https://pnpm.io)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs&logoColor=white)](https://nextjs.org)
@@ -17,7 +17,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**[📄 GitHub Pages mirror](https://kia-mlz.github.io/KIA-GROUP/)** &nbsp;·&nbsp;
+**[📄 GitHub Pages mirror](https://kia-mlz.github.io/KiaDot/)** &nbsp;·&nbsp;
 
 </div>
 
@@ -178,8 +178,8 @@ public static dump.
 **Prerequisites:** Node **≥ 22.13**, pnpm via Corepack, PostgreSQL 16 (local or Docker).
 
 ```bash
-git clone https://github.com/kia-mlz/KIA-GROUP.git KIA-GROUP
-cd KIA-GROUP
+git clone https://github.com/kia-mlz/KiaDot.git KiaDot
+cd KiaDot
 
 corepack enable && corepack prepare pnpm@11.19.0 --activate
 pnpm install --frozen-lockfile        # also generates the Prisma client
@@ -215,7 +215,7 @@ pnpm dev:local                        # web :3000 · api :3001 · health /api/he
 | A — Local Postgres | steps above with your own DB URL | no Docker needed |
 | B — Docker Postgres only | `pnpm docker:db` then `pnpm dev` | hot-reload DX (recommended) |
 | C — Full Docker stack | `pnpm docker:setup && pnpm docker:up` | production-like containers |
-| D — Static Pages export | `pnpm build:pages` | demo mode, basePath `/KIA-GROUP` (override with `PAGES_REPO_NAME`) |
+| D — Static Pages export | `pnpm build:pages` | demo mode, basePath `/KiaDot` (override with `PAGES_REPO_NAME`) |
 
 ## 🧰 Scripts
 
@@ -227,7 +227,7 @@ pnpm dev:local                        # web :3000 · api :3001 · health /api/he
 | `pnpm lint` / `pnpm typecheck` | ESLint flat config / tsc project references |
 | `pnpm test` | Jest (api) + Vitest (shared, brand, permissions, web) suites |
 | `pnpm test:e2e` | Playwright end-to-end flows |
-| `pnpm build:pages` | Static GitHub Pages demo export (basePath `/KIA-GROUP`) |
+| `pnpm build:pages` | Static GitHub Pages demo export (basePath `/KiaDot`) |
 | `pnpm db:migrate` / `db:migrate:deploy` | Dev migrate / non-interactive apply |
 | `pnpm db:seed` | Idempotent upserts (catalog, banks, settings, starter users)
 | `pnpm docker:*` | db/db:down/db:reset/setup/up/down/logs/build |
@@ -276,7 +276,7 @@ Report vulnerabilities responsibly per [`SECURITY.md`](SECURITY.md) — please u
   no backend). To redeploy, build with `GITHUB_PAGES=true NEXT_BASE_PATH= NEXT_PUBLIC_DEMO_MODE=true pnpm --filter @kia./group build`,
   then push `apps/group/out` via the DashPloy API (`POST /api/v1/deploy`, see
   <https://dashploy.com/llms.txt>).
-- **GitHub Pages (mirror):** the `Deploy GitHub Pages` workflow builds the demo app on every push to `main` (`NEXT_PUBLIC_DEMO_MODE=true`, basePath `/KIA-GROUP/`, owner/repo taken from `PAGES_OWNER` + `PAGES_REPO_NAME`) and deploys it automatically — live at <https://kia-mlz.github.io/KIA-GROUP/>. Local preview: `pnpm build:pages` → serve `apps/group/out`.
+- **GitHub Pages (mirror):** the `Deploy GitHub Pages` workflow builds the demo app on every push to `main` (`NEXT_PUBLIC_DEMO_MODE=true`, basePath `/KiaDot/`, owner/repo taken from `PAGES_OWNER` + `PAGES_REPO_NAME`) and deploys it automatically — live at <https://kia-mlz.github.io/KiaDot/>. The old `/KIA-GROUP/` address 404s after the rename. Local preview: `pnpm build:pages` → serve `apps/group/out`.
 - **Self-host Docker:** hardened multi-stage images (`docker build --target api|web`) running as a non-root `node` user, OCI-labelled, with built-in healthchecks; Compose adds `init: true` and `no-new-privileges` on app containers. See run mode **C** above.
 - **CI:** every commit is validated against a live Postgres before merge
 

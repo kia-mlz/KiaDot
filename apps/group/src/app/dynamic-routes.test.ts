@@ -18,6 +18,7 @@ const ON_DEMAND_PAGES = [
   '(academy)/courses/[slug]/page.tsx',
   '(academy)/learn/[courseSlug]/[lessonSlug]/page.tsx',
   '(academy)/learn/[courseSlug]/[lessonSlug]/play/[gameId]/page.tsx',
+  '(events)/events/live/[slug]/page.tsx',
 ];
 
 /** These already allow unknown params; do not lock them to the Pages export. */
@@ -40,5 +41,27 @@ describe('dynamic route params', () => {
       const source = readFileSync(path.join(appDir, rel), 'utf8');
       expect(source, rel).not.toContain('dynamicParams');
     }
+  });
+
+  it('keeps department trees exportable for the GitHub Pages mirror', () => {
+    const layouts = [
+      '(academy)/layout.tsx',
+      '(work)/layout.tsx',
+      '(work)/freelance/layout.tsx',
+      '(material)/material/layout.tsx',
+      '(events)/events/layout.tsx',
+      '(community)/community/layout.tsx',
+      '(labs)/labs/layout.tsx',
+    ];
+    for (const rel of layouts) {
+      const source = readFileSync(path.join(appDir, rel), 'utf8');
+      expect(source, rel).not.toMatch(/export const dynamic\s*=/);
+    }
+    const gate = readFileSync(
+      path.join(appDir, '../components/departments/DepartmentGate.tsx'),
+      'utf8',
+    );
+    expect(gate).toContain("process.env.GITHUB_PAGES === 'true'");
+    expect(gate).toContain('cache: \'no-store\'');
   });
 });

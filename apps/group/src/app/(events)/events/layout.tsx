@@ -12,8 +12,6 @@ export const metadata: Metadata = publicPageMetadata({
   path: '/events',
 });
 
-export const dynamic = 'force-dynamic';
-
 export default function EventsLayout({ children }: { children: React.ReactNode }) {
   return <DepartmentGate department="events">{children}</DepartmentGate>;
 }

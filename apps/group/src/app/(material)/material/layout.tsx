@@ -9,8 +9,6 @@ export const metadata: Metadata = publicPageMetadata({
   path: '/material',
 });
 
-export const dynamic = 'force-dynamic';
-
 export default function MaterialLayout({
   children,
 }: {

@@ -12,8 +12,6 @@ export const metadata: Metadata = publicPageMetadata({
   path: '/freelance',
 });
 
-export const dynamic = 'force-dynamic';
-
 export default function FreelanceLayout({ children }: { children: React.ReactNode }) {
   return <DepartmentGate department="work">{children}</DepartmentGate>;
 }

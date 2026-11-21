@@ -16,6 +16,9 @@ Public name is KiaDot (کیادات). Packages, database, and routes stay `kia`.
 - Department invoices on the shared payment providers, with an honest
   unconfigured state and a dev provider that is refused in production.
 - Migration `20261121120000_kiadot_ecosystem` (additive).
+- GitHub Pages mirror builds again after the repo rename. Department layouts
+  stay statically exportable, and the public mirror URL is
+  `https://kia-mlz.github.io/KiaDot/`.
 
 Learner two-factor authentication is not implemented. Staff TOTP was already
 implemented and is unchanged.
