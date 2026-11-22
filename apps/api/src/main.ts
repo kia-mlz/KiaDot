@@ -5,10 +5,10 @@ import cookieParser from 'cookie-parser';
 import { existsSync, mkdirSync } from 'fs';
 import helmet from 'helmet';
 import { join } from 'path';
-import type { Request, Response } from 'express';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from '@kia./platform';
 import { isProductionEnv } from '@kia./platform';
+import { blockPrivateUploads } from './upload-access';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
@@ -23,16 +23,8 @@ async function bootstrap() {
   if (!existsSync(uploadsRoot)) {
     mkdirSync(uploadsRoot, { recursive: true });
   }
-  app.use('/api/uploads/lessons', (_req: Request, res: Response) => {
-    res.status(401).json({ message: 'Use authenticated media URLs for lesson videos' });
-  });
-  // Ticket attachments are private — download only via authenticated ticket routes.
-  app.use('/api/uploads/tickets', (_req: Request, res: Response) => {
-    res.status(401).json({ message: 'Use authenticated ticket attachment URLs' });
-  });
-  app.use('/api/uploads/material', (_req: Request, res: Response) => {
-    res.status(401).json({ message: 'Use an authenticated download token for material files' });
-  });
+  // Before the static handler, so private trees are not readable at /api/uploads/...
+  app.use('/api/uploads', blockPrivateUploads);
   app.useStaticAssets(uploadsRoot, { prefix: '/api/uploads/' });
 
   app.use(
