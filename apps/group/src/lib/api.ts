@@ -126,6 +126,15 @@ import type {
 import { clearTokens, getAccessToken, setAccessToken } from '@/lib/auth';
 import { ApiError } from '@/lib/apiError';
 import { demoApi } from '@/lib/demoApi';
+import type {
+  MotionCatalogCourse,
+  MotionDashboard,
+  MotionProgress,
+  MotionProject,
+  MotionProjectSummary,
+  MotionSettings,
+  PublishedMotionVideo,
+} from '@/lib/motionTypes';
 import { isDemoMode } from '@/lib/demoMode';
 
 export { ApiError };
@@ -1318,6 +1327,105 @@ const liveApi = {
     return request(`/admin/academy/lessons/${lessonId}/chapter`, {
       method: 'PATCH',
       body: JSON.stringify({ chapterId }),
+    });
+  },
+
+  motionDashboard(): Promise<MotionDashboard> {
+    return request('/admin/academy/motion/dashboard');
+  },
+  motionSettings(): Promise<MotionSettings> {
+    return request('/admin/academy/motion/settings');
+  },
+  motionUpdateSettings(body: { temperature?: number; maxTokens?: number }): Promise<MotionSettings> {
+    return request('/admin/academy/motion/settings', { method: 'PATCH', body: JSON.stringify(body) });
+  },
+  motionCatalog(): Promise<MotionCatalogCourse[]> {
+    return request('/admin/academy/motion/catalog');
+  },
+  motionProjects(): Promise<MotionProjectSummary[]> {
+    return request('/admin/academy/motion/projects');
+  },
+  motionCreateProject(body: Record<string, unknown>): Promise<MotionProject> {
+    return request('/admin/academy/motion/projects', { method: 'POST', body: JSON.stringify(body) });
+  },
+  motionGetProject(id: string): Promise<MotionProject> {
+    return request(`/admin/academy/motion/projects/${id}`);
+  },
+  motionUpdateProject(id: string, body: Record<string, unknown>): Promise<MotionProject> {
+    return request(`/admin/academy/motion/projects/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+  },
+  motionAnalyze(id: string): Promise<MotionProject> {
+    return request(`/admin/academy/motion/projects/${id}/analyze`, { method: 'POST' });
+  },
+  motionApprove(id: string): Promise<MotionProject> {
+    return request(`/admin/academy/motion/projects/${id}/approve`, { method: 'POST' });
+  },
+  motionRender(id: string): Promise<MotionProject> {
+    return request(`/admin/academy/motion/projects/${id}/render`, { method: 'POST' });
+  },
+  motionPublish(
+    id: string,
+    body: { lessonId: string; position?: string; minWatchPercent?: number | null },
+  ): Promise<MotionProject> {
+    return request(`/admin/academy/motion/projects/${id}/publish`, { method: 'POST', body: JSON.stringify(body) });
+  },
+  motionUnpublish(id: string): Promise<MotionProject> {
+    return request(`/admin/academy/motion/projects/${id}/unpublish`, { method: 'POST' });
+  },
+  motionArchive(id: string): Promise<MotionProject> {
+    return request(`/admin/academy/motion/projects/${id}/archive`, { method: 'POST' });
+  },
+  motionDeleteProject(id: string): Promise<{ deleted: boolean }> {
+    return request(`/admin/academy/motion/projects/${id}`, { method: 'DELETE' });
+  },
+  motionNewVersion(id: string): Promise<MotionProject> {
+    return request(`/admin/academy/motion/projects/${id}/version`, { method: 'POST' });
+  },
+  motionReorderScenes(id: string, orderedIds: string[]): Promise<MotionProject> {
+    return request(`/admin/academy/motion/projects/${id}/scenes/reorder`, {
+      method: 'PATCH',
+      body: JSON.stringify({ orderedIds }),
+    });
+  },
+  motionAddScene(id: string): Promise<MotionProject> {
+    return request(`/admin/academy/motion/projects/${id}/scenes`, { method: 'POST' });
+  },
+  motionUpdateScene(id: string, sceneId: string, body: Record<string, unknown>): Promise<MotionProject> {
+    return request(`/admin/academy/motion/projects/${id}/scenes/${sceneId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    });
+  },
+  motionDeleteScene(id: string, sceneId: string): Promise<MotionProject> {
+    return request(`/admin/academy/motion/projects/${id}/scenes/${sceneId}`, { method: 'DELETE' });
+  },
+  motionPreview(id: string, sceneId: string): Promise<{ html: string }> {
+    return request(`/admin/academy/motion/projects/${id}/scenes/${sceneId}/preview`);
+  },
+  motionUploadAudio(id: string, file: File): Promise<MotionProject> {
+    const body = new FormData();
+    body.append('file', file);
+    return request(`/admin/academy/motion/projects/${id}/audio`, { method: 'POST', body });
+  },
+  motionCleanup(id: string): Promise<{ cleaned: boolean }> {
+    return request(`/admin/academy/motion/projects/${id}/cleanup`, { method: 'POST' });
+  },
+  motionCancelJob(id: string): Promise<MotionProject> {
+    return request(`/admin/academy/motion/jobs/${id}/cancel`, { method: 'POST' });
+  },
+  motionRetryJob(id: string): Promise<MotionProject> {
+    return request(`/admin/academy/motion/jobs/${id}/retry`, { method: 'POST' });
+  },
+  motionLesson(lessonId: string): Promise<PublishedMotionVideo> {
+    return request(`/academy/motion/lessons/${lessonId}`);
+  },
+  motionSaveProgress(
+    lessonId: string,
+    body: { lastTimeSec: number; durationSec?: number; ended?: boolean; viewStart?: boolean },
+  ): Promise<MotionProgress> {
+    return request(`/academy/motion/lessons/${lessonId}/progress`, {
+      method: 'POST',
+      body: JSON.stringify(body),
     });
   },
 };

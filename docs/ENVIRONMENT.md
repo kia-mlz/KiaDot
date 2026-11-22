@@ -27,6 +27,8 @@ cp apps/group/.env.example apps/group/.env.local
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | no | Stripe. Checkout stays pending when unset |
 | `CONFERENCE_PROVIDER` | no | Label for the join-link adapter |
 | `CONFERENCE_PROVIDER_URL` | no | Fallback join URL. Unset means “not configured” |
+| `MOTION_AI_BASE_URL`, `MOTION_AI_API_KEY`, `MOTION_AI_MODEL` | no | Optional lesson analyzer. All three or the deterministic reader is used. Never `NEXT_PUBLIC_` |
+| `MOTION_TTS_BASE_URL`, `MOTION_TTS_API_KEY`, `MOTION_TTS_MODEL` | no | Optional narration TTS. Unset means unconfigured; instructors can upload audio |
 
 Kavenegar, Zarinpal, and IDPay keys are stored in site settings from the admin
 panel, not in the frontend.

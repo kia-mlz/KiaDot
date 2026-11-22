@@ -47,6 +47,11 @@ A disabled department makes that department's API return 404.
 Existing course, exam, educational-game, competition, bootcamp, checkout, and
 admin routes remain in place.
 
+Academy lesson motion studio (course editors only, except the learner reads):
+`/admin/academy/motion/*` for storyboard, render jobs, and publish;
+`GET /academy/motion/lessons/:lessonId` and `POST /academy/motion/lessons/:lessonId/progress`
+for a published video. See [`MOTION_STUDIO.md`](MOTION_STUDIO.md).
+
 ## Contracts, billing, notifications
 
 | Method | Path | Notes |

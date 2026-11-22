@@ -163,6 +163,12 @@ export const DEPARTMENT_WORKSPACES: Record<DepartmentSlug, DepartmentWorkspace> 
             href: '/admin/academy/games',
             section: 'educationalGames',
           },
+          {
+            id: 'motion-studio',
+            label: 'استودیو موشن درس',
+            href: '/admin/academy/motion',
+            section: 'courses',
+          },
         ],
       },
     ],

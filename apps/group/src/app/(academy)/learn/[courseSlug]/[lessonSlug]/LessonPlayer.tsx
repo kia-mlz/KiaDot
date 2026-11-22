@@ -19,8 +19,11 @@ import { RequireAuth } from '@/components/auth/RequireAuth';
 import { LessonGames } from '@/components/games/LessonGames';
 import { LessonPlayground } from '@/components/lesson/LessonPlayground';
 import { LessonVideo } from '@/components/lesson/LessonVideo';
+import { MotionLessonPlayer } from '@/components/lesson/MotionLessonPlayer';
+import { SyncedLessonBody } from '@/components/lesson/SyncedLessonBody';
 import { useLanguage } from '@/context/LanguageProvider';
 import { api, ApiError } from '@/lib/api';
+import type { PublishedMotionVideo } from '@/lib/motionTypes';
 import { markdownToHtml } from '@/lib/markdown';
 import { mediaUrl } from '@/lib/mediaUrl';
 
@@ -47,6 +50,9 @@ function LessonPlayerContent({
   const router = useRouter();
   const { t, locale, format } = useLanguage();
   const [lesson, setLesson] = useState<LessonDetail | null>(null);
+  const [motion, setMotion] = useState<PublishedMotionVideo | null>(null);
+  const [motionTime, setMotionTime] = useState(0);
+  const motionSeek = useRef<((seconds: number) => void) | null>(null);
   const [lessons, setLessons] = useState<LessonSummary[]>([]);
   const [courseEnrolled, setCourseEnrolled] = useState(false);
   const [exams, setExams] = useState<CourseExamSummary[]>([]);
@@ -237,6 +243,23 @@ function LessonPlayerContent({
     );
   };
 
+  useEffect(() => {
+    if (!lesson?.id) return;
+    let alive = true;
+    setMotion(null);
+    api
+      .motionLesson(lesson.id)
+      .then((value) => {
+        if (alive) setMotion(value);
+      })
+      .catch(() => {
+        if (alive) setMotion(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [lesson?.id]);
+
   const parsedContent = useMemo(() => {
     if (!lesson) return null;
     // English mode: use the English lesson body/playground when available.
@@ -317,6 +340,27 @@ function LessonPlayerContent({
   }
 
   const videoSrc = lesson.videoUrl ? mediaUrl(lesson.videoUrl) : null;
+  const markdown = parsedContent?.markdown ?? lesson.content;
+  const syncText = lesson.content.trimEnd().startsWith(markdown) ? markdown : null;
+  const activeScene =
+    motion?.scenes.find((scene) => motionTime >= scene.startSec && motionTime < scene.endSec) ?? null;
+  const motionPlayer = motion ? (
+    <MotionLessonPlayer video={motion} onTime={setMotionTime} seekRef={motionSeek} />
+  ) : null;
+  const lessonBody =
+    motion && syncText ? (
+      <SyncedLessonBody
+        content={syncText}
+        scenes={motion.scenes}
+        activeSceneId={activeScene?.id ?? null}
+        onSeek={(seconds) => motionSeek.current?.(seconds)}
+      />
+    ) : (
+      <div
+        className="lesson-description lesson-md"
+        dangerouslySetInnerHTML={{ __html: markdownToHtml(markdown) }}
+      />
+    );
 
   return (
     <div className="page-content">
@@ -439,14 +483,13 @@ function LessonPlayerContent({
                 </div>
               </div>
 
+              {motion?.position === 'AFTER_OBJECTIVES' ? null : motionPlayer}
+
               <LessonVideo src={videoSrc} title={lesson.title} />
 
-              <div
-                className="lesson-description lesson-md"
-                dangerouslySetInnerHTML={{
-                  __html: markdownToHtml(parsedContent?.markdown ?? lesson.content),
-                }}
-              />
+              {lessonBody}
+
+              {motion?.position === 'AFTER_OBJECTIVES' ? motionPlayer : null}
 
               <div className="lesson-actions-row">
                 {lesson.prevSlug ? (

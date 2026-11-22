@@ -33,7 +33,8 @@ generator client {
 //                        UserXpTransaction, Achievement, UserAchievement,
 //                        LearnerGameStats, BootcampProfile, Certificate,
 //                        ClassSession, ClassAttendance, LearningActivity(+Attempt),
-//                        LessonMaterialLink (opaque material id, no cross-FK)
+//                        LessonMaterialLink (opaque material id, no cross-FK),
+//                        MotionVideoProject and its scenes, jobs, subtitles, progress
 //   WORK                 SpecialistProfile, JobPost, JobApplication,
 //                        FreelanceProject, FreelanceProposal, FreelanceMilestone,
 //                        WorkReview
@@ -223,6 +224,8 @@ model User {
   communityPosts         CommunityPost[]
   classAttendances       ClassAttendance[]
   activityAttempts       LearningActivityAttempt[]
+  motionProjects         MotionVideoProject[]
+  motionVideoProgress    MotionVideoProgress[]
 
   @@index([status])
   @@index([role, createdAt])
@@ -661,6 +664,7 @@ model Course {
   certificates  Certificate[]
   classSessions ClassSession[]
   activities    LearningActivity[]
+  motionProjects MotionVideoProject[]
 }
 
 enum CourseExamKind {
@@ -764,6 +768,8 @@ model Lesson {
   examsAfter   CourseExam[]
   materialLinks LessonMaterialLink[]
   activities   LearningActivity[]
+  motionProjects MotionVideoProject[]
+  motionLessonVideo MotionLessonVideo?
 
   @@unique([courseId, slug])
   @@index([courseId, sortOrder])
@@ -1964,4 +1970,263 @@ model CommunityRestriction {
   muted          Boolean   @default(false)
   suspendedUntil DateTime?
   reason         String    @default("")
+}
+
+// =============================================================================
+// ACADEMY — AI Lesson Motion Studio
+// A project always belongs to one course and one lesson. Publish can only
+// attach a video to that same lesson (composite FK on id + lessonId).
+// =============================================================================
+
+enum MotionProjectStatus {
+  Draft
+  Analyzing
+  Storyboarding
+  AwaitingApproval
+  Rendering
+  Processing
+  Completed
+  Failed
+  Published
+  Archived
+}
+
+enum MotionVideoPosition {
+  BEFORE_BODY
+  AFTER_OBJECTIVES
+}
+
+enum MotionJobStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model MotionVideoProject {
+  id                   String              @id @default(cuid())
+  courseId             String
+  course               Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessonId             String
+  lesson               Lesson              @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  createdById          String
+  createdBy            User                @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  title                String
+  status               MotionProjectStatus @default(Draft)
+  style                String              @default("kinetic")
+  styleLocked          Boolean             @default(false)
+  aspect               String              @default("1920x1080")
+  fps                  Int                 @default(30)
+  quality              String              @default("standard")
+  language             String              @default("fa")
+  voiceId              String              @default("")
+  targetDurationSec    Int                 @default(90)
+  sceneCountHint       Int                 @default(0)
+  autoRender           Boolean             @default(false)
+  contentHash          String
+  contentVersion       Int                 @default(1)
+  videoVersion         Int                 @default(0)
+  providerId           String              @default("deterministic")
+  model                String              @default("deterministic")
+  warnings             Json                @default("[]")
+  concepts             Json                @default("[]")
+  sourceSnapshot       String              @default("")
+  sourceSnapshotEn     String              @default("")
+  contextJson          Json                @default("{}")
+  stale                Boolean             @default(false)
+  approvedAt           DateTime?
+  narrationAudioStatus String              @default("unconfigured")
+  parentProjectId      String?
+  parent               MotionVideoProject? @relation("MotionVersionChain", fields: [parentProjectId], references: [id], onDelete: SetNull)
+  children             MotionVideoProject[] @relation("MotionVersionChain")
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  scenes      MotionScene[]
+  assets      MotionAsset[]
+  versions    MotionVersion[]
+  jobs        MotionJob[]
+  subtitles   MotionSubtitle[]
+  audio       MotionAudio[]
+  progress    MotionVideoProgress[]
+  lessonVideo MotionLessonVideo?
+
+  @@unique([id, lessonId])
+  @@index([courseId])
+  @@index([lessonId, status])
+  @@index([status])
+  @@index([createdById])
+}
+
+model MotionScene {
+  id            String             @id @default(cuid())
+  projectId     String
+  project       MotionVideoProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sortOrder     Int
+  title         String
+  narration     String             @default("")
+  narrationEn   String             @default("")
+  onScreenText  String             @default("")
+  durationSec   Int                @default(6)
+  animationType String             @default("kinetic")
+  code          String             @default("")
+  codeLanguage  String             @default("")
+  codeSource    String             @default("lesson")
+  sourceStart   Int                @default(0)
+  sourceEnd     Int                @default(0)
+  sourceAnchor  String             @default("")
+  warnings      Json               @default("[]")
+
+  @@index([projectId, sortOrder])
+}
+
+model MotionAsset {
+  id          String             @id @default(cuid())
+  projectId   String
+  project     MotionVideoProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  kind        String
+  filename    String
+  mime        String
+  sizeBytes   Int
+  storagePath String
+  createdAt   DateTime           @default(now())
+
+  @@index([projectId, kind])
+}
+
+model MotionVersion {
+  id             String             @id @default(cuid())
+  projectId      String
+  project        MotionVideoProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  contentVersion Int
+  videoVersion   Int
+  contentHash    String
+  providerId     String
+  model          String
+  style          String
+  status         String
+  videoPath      String             @default("")
+  note           String             @default("")
+  createdAt      DateTime           @default(now())
+
+  @@index([projectId, createdAt])
+}
+
+model MotionJob {
+  id              String             @id @default(cuid())
+  projectId       String
+  project         MotionVideoProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  kind            String
+  status          MotionJobStatus    @default(QUEUED)
+  cancelRequested Boolean            @default(false)
+  errorLog        String             @default("")
+  attempts        Int                @default(0)
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([status, createdAt])
+  @@index([projectId, createdAt])
+}
+
+model MotionSubtitle {
+  id        String             @id @default(cuid())
+  projectId String
+  project   MotionVideoProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  locale    String
+  format    String
+  body      String
+  edited    Boolean            @default(false)
+
+  @@unique([projectId, locale, format])
+}
+
+model MotionAudio {
+  id          String             @id @default(cuid())
+  projectId   String
+  project     MotionVideoProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sceneId     String?
+  mime        String
+  filename    String
+  storagePath String
+  sizeBytes   Int
+  createdAt   DateTime           @default(now())
+
+  @@index([projectId])
+}
+
+/**
+ * The published attachment. lessonId is part of the FK back to the project,
+ * so a row cannot point at a different lesson than the project owns.
+ * One published motion video per lesson.
+ */
+model MotionLessonVideo {
+  id              String              @id @default(cuid())
+  projectId       String
+  lessonId        String
+  project         MotionVideoProject  @relation(fields: [projectId, lessonId], references: [id, lessonId], onDelete: Cascade)
+  lesson          Lesson              @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  courseId        String
+  position        MotionVideoPosition @default(BEFORE_BODY)
+  videoFilename   String
+  contentHash     String
+  videoVersion    Int
+  stale           Boolean             @default(false)
+  minWatchPercent Int?
+  publishedAt     DateTime            @default(now())
+
+  @@unique([projectId, lessonId])
+  @@unique([lessonId])
+  @@index([courseId])
+}
+
+model MotionVideoProgress {
+  id           String             @id @default(cuid())
+  userId       String
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId    String
+  project      MotionVideoProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lessonId     String
+  lastTimeSec  Float              @default(0)
+  percent      Float              @default(0)
+  completed    Boolean            @default(false)
+  lastViewedAt DateTime           @default(now())
+  viewCount    Int                @default(0)
+
+  @@unique([userId, projectId])
+  @@index([lessonId])
+  @@index([userId, lessonId])
+}
+
+/** Non-secret analyzer settings. The API key stays in server env. */
+model MotionAiProviderSettings {
+  id          String   @id @default("default")
+  temperature Float    @default(0.2)
+  maxTokens   Int      @default(2000)
+  updatedAt   DateTime @updatedAt
+}
+
+model MotionAiUsageLog {
+  id        String   @id @default(cuid())
+  provider  String
+  model     String
+  lessonId  String?
+  projectId String?
+  tokens    Int      @default(0)
+  status    String
+  error     String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([lessonId, createdAt])
+  @@index([createdAt])
+}
+
+model MotionTemplate {
+  id            String @id @default(cuid())
+  key           String @unique
+  name          String
+  animationType String
+  description   String @default("")
 }

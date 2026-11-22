@@ -976,3 +976,158 @@
 .legal-shell a {
   color: var(--brand);
 }
+
+.lesson-motion-span {
+  display: block;
+  width: 100%;
+  margin: 0 0 0.25rem;
+  padding: 0.15rem 0.6rem;
+  border: 0;
+  border-inline-start: 3px solid transparent;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+.lesson-motion-span.is-active {
+  border-inline-start-color: var(--dept, var(--dept-academy));
+  background: color-mix(in srgb, var(--dept, var(--dept-academy)) 14%, transparent);
+}
+
+.motion-player video {
+  width: 100%;
+  background: #111;
+}
+
+.motion-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.75rem;
+}
+
+.motion-scrub {
+  flex: 1 1 8rem;
+  min-width: 6rem;
+}
+
+.motion-speed {
+  width: auto;
+  min-height: 2.25rem;
+}
+
+.motion-time {
+  font-variant-numeric: tabular-nums;
+}
+
+.motion-studio {
+  display: grid;
+  gap: 1rem;
+}
+
+.motion-studio-head h1 {
+  margin: 0.25rem 0;
+}
+
+.motion-kicker {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  color: var(--dept, var(--dept-academy));
+  font-weight: 700;
+}
+
+.motion-counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 0.75rem;
+}
+
+.motion-count {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.motion-count strong {
+  font-size: 1.5rem;
+}
+
+.motion-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.motion-form-grid label,
+.motion-scene-editor label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.motion-check {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.motion-actions,
+.motion-scenes,
+.motion-project-list,
+.motion-jobs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.motion-scenes li,
+.motion-jobs li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  width: 100%;
+}
+
+.motion-preview {
+  width: 100%;
+  min-height: 280px;
+  border: 1px solid var(--border, #ccc);
+  border-radius: 12px;
+  background: #14161c;
+}
+
+.motion-jobs pre {
+  width: 100%;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 420px) {
+  .motion-controls {
+    align-items: stretch;
+  }
+
+  .motion-speed,
+  .motion-scrub {
+    width: 100%;
+  }
+}

@@ -144,6 +144,15 @@ import {
   validateDiscountInput,
 } from '@kia./shared';
 import { ApiError } from '@/lib/apiError';
+import type {
+  MotionCatalogCourse,
+  MotionDashboard,
+  MotionProgress,
+  MotionProject,
+  MotionProjectSummary,
+  MotionSettings,
+  PublishedMotionVideo,
+} from '@/lib/motionTypes';
 import { clearTokens, setAccessToken } from '@/lib/auth';
 import {
   demoAdminGameResults,
@@ -3677,7 +3686,92 @@ export const demoApi = {
   async adminAssignLessonChapter(): Promise<{ id: string }> {
     return delay({ id: 'demo-lesson' });
   },
+  motionDashboard(): Promise<MotionDashboard> {
+    return motionLiveOnly();
+  },
+  motionSettings(): Promise<MotionSettings> {
+    return motionLiveOnly();
+  },
+  motionUpdateSettings(): Promise<MotionSettings> {
+    return motionLiveOnly();
+  },
+  motionCatalog(): Promise<MotionCatalogCourse[]> {
+    return motionLiveOnly();
+  },
+  motionProjects(): Promise<MotionProjectSummary[]> {
+    return motionLiveOnly();
+  },
+  motionCreateProject(): Promise<MotionProject> {
+    return motionLiveOnly();
+  },
+  motionGetProject(): Promise<MotionProject> {
+    return motionLiveOnly();
+  },
+  motionUpdateProject(): Promise<MotionProject> {
+    return motionLiveOnly();
+  },
+  motionAnalyze(): Promise<MotionProject> {
+    return motionLiveOnly();
+  },
+  motionApprove(): Promise<MotionProject> {
+    return motionLiveOnly();
+  },
+  motionRender(): Promise<MotionProject> {
+    return motionLiveOnly();
+  },
+  motionPublish(): Promise<MotionProject> {
+    return motionLiveOnly();
+  },
+  motionUnpublish(): Promise<MotionProject> {
+    return motionLiveOnly();
+  },
+  motionArchive(): Promise<MotionProject> {
+    return motionLiveOnly();
+  },
+  motionDeleteProject(): Promise<{ deleted: boolean }> {
+    return motionLiveOnly();
+  },
+  motionNewVersion(): Promise<MotionProject> {
+    return motionLiveOnly();
+  },
+  motionReorderScenes(): Promise<MotionProject> {
+    return motionLiveOnly();
+  },
+  motionAddScene(): Promise<MotionProject> {
+    return motionLiveOnly();
+  },
+  motionUpdateScene(): Promise<MotionProject> {
+    return motionLiveOnly();
+  },
+  motionDeleteScene(): Promise<MotionProject> {
+    return motionLiveOnly();
+  },
+  motionPreview(): Promise<{ html: string }> {
+    return motionLiveOnly();
+  },
+  motionUploadAudio(): Promise<MotionProject> {
+    return motionLiveOnly();
+  },
+  motionCleanup(): Promise<{ cleaned: boolean }> {
+    return motionLiveOnly();
+  },
+  motionCancelJob(): Promise<MotionProject> {
+    return motionLiveOnly();
+  },
+  motionRetryJob(): Promise<MotionProject> {
+    return motionLiveOnly();
+  },
+  motionLesson(): Promise<PublishedMotionVideo> {
+    return motionLiveOnly();
+  },
+  motionSaveProgress(): Promise<MotionProgress> {
+    return motionLiveOnly();
+  },
 };
+
+function motionLiveOnly<T>(): Promise<T> {
+  return Promise.reject(new ApiError('Motion studio needs the live API', 503));
+}
 
 function defaultDemoTestBank(id: TestBankId): TestBankPayload {
   if (id === 'personality') {

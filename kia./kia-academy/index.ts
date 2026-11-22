@@ -12,3 +12,4 @@ export { PersonalityModule } from './students/personality/personality.module';
 export { ProgressModule } from './students/progress/progress.module';
 export { EducationalGamesModule } from './courses/educational-games/educational-games.module';
 export { AcademyActivitiesModule } from './activities/activities.module';
+export { MotionStudioModule } from './motion/motion.module';
