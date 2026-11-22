@@ -1,3 +1,8 @@
+import { planSceneVisual } from './scene-plan';
+import { buildStageDocument } from './stage-html';
+
+export { escapeHtml } from './html-escape';
+
 export interface PreviewScene {
   title: string;
   narration: string;
@@ -6,19 +11,7 @@ export interface PreviewScene {
   code: string;
   codeLanguage: string;
   codeSource: string;
-}
-
-const HTML_ESCAPE: Record<string, string> = {
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '&#39;',
-};
-
-/** Escape every character that can open a tag or an attribute in this document. */
-export function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (char) => HTML_ESCAPE[char] ?? char);
+  durationSec?: number;
 }
 
 const PREVIEW_URL_BASE = 'https://motion-preview.invalid';
@@ -55,38 +48,9 @@ export function isAllowedPreviewUrl(value: string): boolean {
   return parsed.protocol === 'https:' || parsed.protocol === 'http:';
 }
 
-/** Build the admin preview from scene fields. Lesson markup is shown as text, not parsed. */
+/** Build the admin preview from scene fields. Lesson markup is shown as text, not parsed or run. */
 export function buildScenePreviewHtml(scene: PreviewScene): string {
-  const title = escapeHtml(scene.title);
-  const narration = escapeHtml(scene.narration);
-  const onScreen = escapeHtml(scene.onScreenText);
-  const code = escapeHtml(scene.code);
-  const instructor =
-    scene.code && scene.codeSource === 'instructor'
-      ? '<p class="label">ویرایش مدرس — این کد از متن اصلی درس نیست.</p>'
-      : '';
-  const codeBlock = scene.code ? `<pre><code>${code}</code></pre>` : '';
-  return `<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-<meta charset="utf-8" />
-<style>
-  body { margin: 0; background: #14161c; color: #f4f1ea; font-family: "Noto Naskh Arabic", sans-serif; }
-  main { padding: 28px; display: grid; gap: 16px; }
-  h1 { font-size: 28px; margin: 0; }
-  .screen { font-size: 20px; }
-  pre { direction: ltr; text-align: left; background: #0e1016; padding: 16px; overflow: auto; font-family: "DejaVu Sans Mono", monospace; white-space: pre-wrap; }
-  .label { color: #e6c07b; }
-</style>
-</head>
-<body>
-<main>
-  <h1>${title}</h1>
-  <p class="screen">${onScreen}</p>
-  <p>${narration}</p>
-  ${instructor}
-  ${codeBlock}
-</main>
-</body>
-</html>`;
+  const durationSec = scene.durationSec && scene.durationSec > 0 ? scene.durationSec : 8;
+  const plan = planSceneVisual({ ...scene, durationSec });
+  return buildStageDocument(plan, { ...scene, durationSec }, { play: true, width: 1280, height: 720 });
 }

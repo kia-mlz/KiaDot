@@ -33,7 +33,12 @@ describe('motion preview html', () => {
       }),
     );
     const escaped = escapeHtml(payload);
-    expect(html.split(escaped).length - 1).toBe(4);
+    expect(html).toContain(`<p class="field-title">${escaped}</p>`);
+    expect(html).toContain(`<p class="field-narration">${escaped}</p>`);
+    expect(html).toContain(`<p class="field-screen">${escaped}</p>`);
+    expect(html).toContain(`<pre><code>${escaped}</code></pre>`);
+    expect(html).toContain('var(--t)');
+    expect(html).toContain('transform:');
     expect(html).not.toMatch(/<script/i);
     expect(html).not.toMatch(/<\/script/i);
     expect(html).not.toContain('<img');

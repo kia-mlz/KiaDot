@@ -261,6 +261,9 @@ importers:
 
   kia./kia-academy:
     dependencies:
+      '@kia./brand':
+        specifier: workspace:*
+        version: link:../../packages/brand
       '@kia./platform':
         specifier: workspace:*
         version: link:../../packages/platform

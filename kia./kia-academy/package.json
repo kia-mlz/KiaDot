@@ -12,6 +12,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@kia./brand": "workspace:*",
     "@kia./platform": "workspace:*",
     "@kia./shared": "workspace:*",
     "@nestjs/common": "^11.0.12",

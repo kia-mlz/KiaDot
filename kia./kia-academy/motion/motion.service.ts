@@ -557,6 +557,7 @@ export class MotionService {
         code: scene.code,
         codeLanguage: scene.codeLanguage,
         codeSource: scene.codeSource,
+        durationSec: scene.durationSec,
       };
       return { html: buildScenePreviewHtml(preview) };
     });
