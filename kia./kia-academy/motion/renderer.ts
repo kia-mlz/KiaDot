@@ -1,6 +1,9 @@
 import { spawn } from 'child_process';
 import { existsSync, statSync } from 'fs';
-import { isServerAudioFilename, isServerVideoFilename, projectFile, writeProjectText } from './storage';
+import { ChromeFrames } from './chrome-frames';
+import { planSceneVisual } from './scene-plan';
+import { buildStageDocument } from './stage-html';
+import { isServerAudioFilename, isServerVideoFilename, projectFile, writeProjectBytes, writeProjectText } from './storage';
 
 export interface RenderFrameScene {
   title: string;
@@ -25,80 +28,15 @@ export interface RenderRequest {
   signal: AbortSignal;
 }
 
-const SANS_FONT = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
-const MONO_FONT = '/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf';
+/** Capture rate for the moving frames. ffmpeg repeats them up to the project fps. */
+const CAPTURE_FPS = 8;
 
-function frameText(text: string): string {
-  return text
-    .replace(/\r/g, '')
-    .replace(/[\u2010-\u2015]/g, '-')
-    .replace(/[•●▪‣]/g, '-');
-}
-
-function wrapLines(text: string, width: number, maxLines: number): string[] {
-  const words = frameText(text).split(/\n+/).flatMap((line) => {
-    const parts: string[] = [];
-    let current = '';
-    for (const word of line.split(/\s+/)) {
-      if (!word) continue;
-      const next = current ? `${current} ${word}` : word;
-      if (next.length > width && current) {
-        parts.push(current);
-        current = word;
-      } else {
-        current = next;
-      }
-    }
-    if (current) parts.push(current);
-    return parts.length ? parts : [''];
-  });
-  return words.filter((line) => line.trim().length > 0).slice(0, maxLines);
-}
-
-function fontFor(mono: boolean): string {
-  return mono ? MONO_FONT : SANS_FONT;
-}
-
-/** One drawtext per line. librsvg does not shape Arabic, so frames use ffmpeg drawtext. */
-export function sceneDrawFilters(
-  scene: RenderFrameScene,
-  width: number,
-  height: number,
-  writeLine: (name: string, text: string) => string,
-): string {
-  const titleWidth = Math.max(16, Math.floor((width - 160) / 28));
-  const bodyWidth = Math.max(18, Math.floor((width - 160) / 18));
-  const title = wrapLines(scene.onScreenText || scene.title, titleWidth, 2);
-  const code = frameText(scene.code)
-    .replace(/\t/g, '  ')
-    .split('\n')
-    .map((line) => line.trimEnd().slice(0, 78))
-    .filter((line) => line.trim().length > 0)
-    .slice(0, 8);
-  const bodyBudget = Math.max(2, Math.floor((height - 240 - code.length * 36) / 52));
-  const narration = wrapLines(scene.narration, bodyWidth, scene.code ? Math.min(4, bodyBudget) : bodyBudget);
-  const filters = [`drawbox=x=0:y=0:w=18:h=ih:color=0xe6e1d6:t=fill`];
-  const push = (name: string, text: string, font: string, size: number, color: string, x: string, y: number) => {
-    const file = writeLine(name, text);
-    filters.push(
-      `drawtext=expansion=none:fontfile=${font}:textfile=${file}:fontsize=${size}:fontcolor=${color}:x=${x}:y=${y}`,
-    );
-  };
-  title.forEach((line, index) => {
-    push(`title-${index}.txt`, line, fontFor(false), 46, '0xf4f1ea', 'w-text_w-72', 110 + index * 64);
-  });
-  narration.forEach((line, index) => {
-    push(`body-${index}.txt`, line, fontFor(false), 30, '0xd9d4c8', 'w-text_w-72', 250 + index * 52);
-  });
-  if (scene.code && scene.codeSource === 'instructor') {
-    push('instructor.txt', 'ویرایش مدرس', SANS_FONT, 24, '0xe6c07b', '72', 72);
-  }
-  code.forEach((line, index) => {
-    const y = height - 64 - (code.length - index) * 34;
-    push(`code-${index}.txt`, line, MONO_FONT, 22, '0xd7e6c8', '72', y);
-  });
-  return filters.join(',');
-}
+const FRAME_FONTS = [
+  '/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf',
+  '/usr/share/fonts/truetype/noto/NotoNaskhArabic-Bold.ttf',
+  '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+  '/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf',
+];
 
 function runFfmpeg(args: string[], signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -143,11 +81,46 @@ export async function assertFfmpegAvailable(): Promise<void> {
 }
 
 export function assertFrameFonts(): void {
-  if (!existsSync(SANS_FONT) || !existsSync(MONO_FONT)) {
+  const missing = FRAME_FONTS.filter((font) => !existsSync(font));
+  if (missing.length) {
     throw new Error(
-      `Frame fonts are missing (${SANS_FONT}, ${MONO_FONT}). Install fonts-dejavu-core. See docs/MOTION_STUDIO.md.`,
+      `Frame fonts are missing (${missing.join(', ')}). Install fonts-noto-core and fonts-dejavu-core. See docs/MOTION_STUDIO.md.`,
     );
   }
+}
+
+function frameCount(durationSec: number): number {
+  return Math.max(8, Math.round(Math.max(1, durationSec) * CAPTURE_FPS));
+}
+
+async function encodeSegment(request: RenderRequest, sceneIndex: number, durationSec: number): Promise<void> {
+  const pattern = projectFile(request.projectId, `frame-${sceneIndex}-%04d.png`);
+  const segmentPath = projectFile(request.projectId, `seg-${sceneIndex}.mp4`);
+  await runFfmpeg(
+    [
+      '-y',
+      '-framerate',
+      String(CAPTURE_FPS),
+      '-start_number',
+      '1',
+      '-i',
+      pattern,
+      '-t',
+      String(durationSec),
+      '-r',
+      String(request.fps),
+      '-c:v',
+      'libx264',
+      '-pix_fmt',
+      'yuv420p',
+      '-crf',
+      String(request.crf),
+      '-movflags',
+      '+faststart',
+      segmentPath,
+    ],
+    request.signal,
+  );
 }
 
 export async function renderStoryboard(request: RenderRequest): Promise<{ bytes: number; filename: string }> {
@@ -163,41 +136,36 @@ export async function renderStoryboard(request: RenderRequest): Promise<{ bytes:
   assertFrameFonts();
   if (request.signal.aborted) throw new Error('MOTION_CANCELLED');
 
+  const chrome = await ChromeFrames.launch(request.signal);
   const segmentNames: string[] = [];
-  for (let index = 0; index < request.scenes.length; index += 1) {
-    if (request.signal.aborted) throw new Error('MOTION_CANCELLED');
-    const scene = request.scenes[index];
-    if (!scene) continue;
-    const segmentName = `seg-${index}.mp4`;
-    const segmentPath = projectFile(request.projectId, segmentName);
-    const filters = sceneDrawFilters(scene, request.width, request.height, (name, text) =>
-      writeProjectText(request.projectId, `line-${index}-${name}`, text),
-    );
-    const duration = String(Math.max(1, scene.durationSec));
-    await runFfmpeg(
-      [
-        '-y',
-        '-f',
-        'lavfi',
-        '-i',
-        `color=c=0x14161c:s=${request.width}x${request.height}:d=${duration}:r=${request.fps}`,
-        '-vf',
-        filters,
-        '-t',
-        duration,
-        '-c:v',
-        'libx264',
-        '-pix_fmt',
-        'yuv420p',
-        '-crf',
-        String(request.crf),
-        '-movflags',
-        '+faststart',
-        segmentPath,
-      ],
-      request.signal,
-    );
-    segmentNames.push(segmentName);
+  try {
+    for (let index = 0; index < request.scenes.length; index += 1) {
+      if (request.signal.aborted) throw new Error('MOTION_CANCELLED');
+      const scene = request.scenes[index];
+      if (!scene) continue;
+      const durationSec = Math.max(1, scene.durationSec);
+      const plan = planSceneVisual(scene);
+      const html = buildStageDocument(plan, scene, {
+        play: false,
+        width: request.width,
+        height: request.height,
+      });
+      const stagePath = writeProjectText(request.projectId, `stage-${index}.html`, html);
+      await chrome.show(stagePath, request.width, request.height);
+      const frames = frameCount(durationSec);
+      for (let frame = 1; frame <= frames; frame += 1) {
+        if (request.signal.aborted) throw new Error('MOTION_CANCELLED');
+        const progress = frames === 1 ? 1 : (frame - 1) / (frames - 1);
+        await chrome.seek(progress);
+        const png = await chrome.png();
+        const name = `frame-${index}-${String(frame).padStart(4, '0')}.png`;
+        writeProjectBytes(request.projectId, name, png);
+      }
+      await encodeSegment(request, index, durationSec);
+      segmentNames.push(`seg-${index}.mp4`);
+    }
+  } finally {
+    await chrome.close();
   }
 
   const list = segmentNames.map((name) => `file '${name}'`).join('\n');
@@ -239,10 +207,7 @@ export async function renderStoryboard(request: RenderRequest): Promise<{ bytes:
       request.signal,
     );
   } else {
-    await runFfmpeg(
-      ['-y', '-i', silentPath, '-c', 'copy', '-movflags', '+faststart', outputPath],
-      request.signal,
-    );
+    await runFfmpeg(['-y', '-i', silentPath, '-c', 'copy', '-movflags', '+faststart', outputPath], request.signal);
   }
 
   const bytes = statSync(outputPath).size;

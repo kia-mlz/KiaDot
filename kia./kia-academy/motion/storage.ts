@@ -5,7 +5,8 @@ import { resolveUnderRoot } from '@kia./platform';
 import { detectAudioMime, extensionForMime } from './audio';
 import { MOTION_LIMITS } from './policy';
 
-const TEXT_FILE = /^(?:list\.txt|line-\d+-(?:title-\d+|body-\d+|code-\d+|instructor)\.txt)$/;
+const TEXT_FILE = /^(?:list\.txt|stage-\d+\.html|line-\d+-(?:title-\d+|body-\d+|code-\d+|instructor)\.txt)$/;
+const FRAME_FILE = /^frame-\d+-\d{4}\.png$/;
 const AUDIO_FILE =
   /^(?:narration|tts)-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:mp3|wav|ogg|webm|m4a)$/;
 const VIDEO_FILE = /^video-v\d+\.mp4$/;
@@ -37,7 +38,7 @@ export function projectFile(projectId: string, filename: string): string {
   return resolveUnderRoot(motionRoot(), projectId, filename);
 }
 
-/** Write a server-named drawtext or concat-list file. The name is not taken from a request. */
+/** Write a server-named stage, subtitle line, or concat-list file. The name is not taken from a request. */
 export function writeProjectText(projectId: string, filename: string, text: string): string {
   if (!isMotionTextFilename(filename)) {
     throw new BadRequestException('Invalid motion text name');
@@ -45,6 +46,17 @@ export function writeProjectText(projectId: string, filename: string, text: stri
   const dir = ensureProjectDir(projectId);
   const absolute = resolveUnderRoot(dir, filename);
   writeFileSync(absolute, text);
+  return absolute;
+}
+
+/** Write one server-named PNG frame. The name is not taken from a request. */
+export function writeProjectBytes(projectId: string, filename: string, bytes: Buffer): string {
+  if (!FRAME_FILE.test(filename) || bytes.length < 8) {
+    throw new BadRequestException('Invalid motion frame');
+  }
+  const dir = ensureProjectDir(projectId);
+  const absolute = resolveUnderRoot(dir, filename);
+  writeFileSync(absolute, bytes);
   return absolute;
 }
 
@@ -90,6 +102,8 @@ export function cleanupWorkFiles(projectId: string, keep: string[]): void {
       name.endsWith('.svg') ||
       name.startsWith('seg-') ||
       name.startsWith('line-') ||
+      name.startsWith('frame-') ||
+      (name.startsWith('stage-') && name.endsWith('.html')) ||
       name === 'silent.mp4' ||
       name === 'list.txt'
     ) {

@@ -1097,10 +1097,12 @@
 
 .motion-preview {
   width: 100%;
-  min-height: 280px;
-  border: 1px solid var(--border, #ccc);
+  aspect-ratio: 16 / 9;
+  min-height: 220px;
+  height: auto;
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: #14161c;
+  background: var(--ink-50);
 }
 
 .motion-jobs pre {

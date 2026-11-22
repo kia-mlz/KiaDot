@@ -37,35 +37,66 @@ defaults to off, so existing lessons are not locked.
 ## Render
 
 The API process runs one render at a time from a database queue (`setInterval`
-in `MotionJobRunner`). Cancel sets a flag and aborts the ffmpeg process. Retry
+in `MotionJobRunner`). Cancel sets a flag and aborts the ffmpeg process and
+the headless Chrome process that is drawing frames. Retry
 queues a new job. Temporary frames live under `uploads/motion-private/<projectId>/`
 and are not public URLs. Cleanup removes svg frames and segment files and keeps
 the finished mp4.
 
-Each scene is an ffmpeg color frame with `drawtext`. Persian and Latin share
-DejaVu Sans, which also has the hyphens and bullets used in lesson text. Code
-uses DejaVu Sans Mono. Noto Naskh draws Persian but drops those punctuation
-marks, and librsvg does not shape Arabic, so frames are not SVG text. ffmpeg
-encodes H.264 at 1920×1080 or 1280×720, 24 or 30 fps. The admin preview is
-built from scene fields. Title, narration, on-screen text, and code are
-HTML-escaped and shown as text, so lesson markup is not parsed or executed.
-The admin page loads that document in a sandboxed iframe. The finished MP4 is
-written by ffmpeg to a server-chosen `video-vN.mp4` under
-`uploads/motion-private/<projectId>/`, not from the request body. Narration
-uploads and TTS audio are stored only after an allowlisted MIME, a 20 MB cap,
-and magic bytes agree, under a server-chosen name in that same private directory.
-The media response sends `X-Content-Type-Options: nosniff`.
+Each scene is a moving picture of **that scene’s own span**. A deterministic
+plan reads the scene title, the short on-screen line, the narration, and the
+lesson code fence. It does not invent a tag, file, or CSS property the span
+never names. On the frame, words stay short (the concept, a tag, a step). The
+long paragraph stays in the lesson body and in the narration field, which is
+also the subtitle source. It is not drawn as a paragraph on the picture.
 
-If `ffmpeg` is missing, the job status is Failed and the error says to install
-it. The pipeline never writes a fake mp4.
+What the picture does:
+
+- HTML spans draw the named tags. A page outline appears, `<!DOCTYPE html>`
+  types on when the lesson says it, and `<html>`, `<head>`, and `<body>` nest
+  when those tags are in the span. The lesson’s own code types on beside them.
+- CSS spans move one shape using only the properties named in the span
+  (color, size, or position). An axis arrow appears only for
+  `justify-content`, `align-items`, or `flex-direction`.
+- JavaScript spans slide the names and values written in the lesson
+  (`const`, `let`, `var`, `function`). The lesson’s JavaScript is never executed.
+- File spans show the named folder and files (`index.html`, and so on).
+- Lists show the lesson’s own steps, one at a time.
+- Other spans are one big idea: kinetic type and one shape drawn from
+  primitives. No clip art is fetched.
+
+Elements enter, grow, nest, or slide across the scene. The admin preview is
+the same HTML document with a CSS `--t` animation, loaded in a sandboxed
+iframe (`sandbox=""`), so it cannot run scripts. Render captures that document
+in headless Chrome at several frames per second, with `--t` set by the
+renderer (not by lesson code), then ffmpeg encodes H.264 at 1920×1080 or
+1280×720, 24 or 30 fps. Persian uses Noto Naskh Arabic, with DejaVu Sans as
+the fallback that still draws punctuation. Code uses DejaVu Sans Mono.
+Academy colour comes from `@kia./brand`. Paper and ink use the documented
+`--ink-*` values. Every lesson string placed in the HTML is escaped
+(`& < > " '`).
+
+Temporary stage HTML and PNG frames live under
+`uploads/motion-private/<projectId>/` and are not public URLs. Cleanup removes
+them and keeps the finished mp4. The mp4 is a server-chosen `video-vN.mp4`,
+not a name from the request. Narration uploads and TTS audio are stored only
+after an allowlisted MIME, a 20 MB cap, and magic bytes agree, under a
+server-chosen name in that same private directory. The media response sends
+`X-Content-Type-Options: nosniff`.
+
+If `ffmpeg` or Chrome is missing, the job status is Failed and the error says
+what to install. The pipeline never writes a fake mp4.
 
 ```bash
-sudo apt-get install -y ffmpeg fonts-dejavu-core
+sudo apt-get install -y ffmpeg fonts-dejavu-core fonts-noto-core
 ffmpeg -version
+google-chrome --version || chromium --version
 ```
 
 Fonts expected on the machine:
 
+- `/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf`
+- `/usr/share/fonts/truetype/noto/NotoNaskhArabic-Bold.ttf`
 - `/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf`
 - `/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf`
 
