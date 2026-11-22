@@ -91,6 +91,7 @@ describe('departments solar system', () => {
 
   it('renders the hub on the post-auth landing instead of the door grid', () => {
     expect(home).toContain('<DepartmentSolarSystem />');
+    expect(home).not.toContain('CentralHome');
     expect(home).not.toMatch(/<HubDoors/);
     expect(dashboard).not.toMatch(/<HubDoors/);
 
