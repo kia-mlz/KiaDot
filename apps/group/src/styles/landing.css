@@ -7,11 +7,9 @@
   padding-bottom: var(--space-section);
 }
 
-/* The guest landing is a single screen: `.site-main--guest` already reserves
-   100vh and `.landing-intro` fills it, so this section's trailing padding was
-   the only thing pushing the page past the fold and creating a scrollbar on
-   desktop. Drop it here only — the post-auth landing has real content below
-   the fold and still needs the spacing. */
+/* The hero (`.landing-intro`) still fills the first viewport. Its parent keeps
+   zero padding so the fold stays on the hero; the scroll story below brings
+   its own bottom padding so the last section is not flush. */
 .site-main--guest .landing {
   padding-bottom: 0;
 }
@@ -541,6 +539,186 @@
   .landing-doors--depts {
     grid-template-columns: 1fr;
   }
+}
+
+/* --- public scroll story (guest /) -------------------------------------- */
+.landing-story {
+  position: relative;
+  z-index: var(--z-raised);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-14);
+  padding-top: var(--space-8);
+  padding-bottom: var(--space-section);
+}
+
+.landing-story-section {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.landing-story h2 {
+  margin: 0;
+  font-size: var(--fs-h2);
+  font-weight: 800;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+.landing-story-slogan,
+.landing-story-mission,
+.landing-story-body,
+.landing-story-empty,
+.landing-story-summary {
+  margin: 0;
+  max-width: 42rem;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+.landing-story-slogan {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.landing-story-mission {
+  color: var(--text);
+}
+
+.landing-story-body,
+.landing-story-empty,
+.landing-story-summary,
+.landing-story-dept-desc,
+.landing-story-meta {
+  color: var(--text-dim);
+}
+
+.landing-story-depts,
+.landing-story-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.landing-story-depts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(15.5rem, 100%), 1fr));
+  gap: var(--space-3);
+}
+
+.landing-story-dept {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 0;
+  height: 100%;
+  padding: var(--space-4);
+  border: 1px solid var(--tile-hairline, var(--border));
+  border-inline-start-width: 4px;
+  border-inline-start-color: var(--dept, var(--border));
+  border-radius: var(--radius-lg);
+  background: var(--tile-tint, var(--bg-card));
+  color: var(--text);
+  text-decoration: none;
+  box-shadow: var(--shadow-xs);
+}
+
+.landing-story-dept:hover {
+  border-color: var(--tile-border-hover, var(--border));
+}
+
+.landing-story-dept-name {
+  font-size: var(--fs-h3);
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.landing-story-dept-desc {
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.landing-story-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.landing-story-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: inherit;
+  text-decoration: none;
+  box-shadow: var(--shadow-xs);
+}
+
+.landing-story-item:hover {
+  border-color: var(--brand-hairline);
+}
+
+.landing-story-kicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.landing-story-kind,
+.landing-story-soon {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-micro);
+  line-height: 1.4;
+}
+
+.landing-story-kind {
+  border: 1px solid var(--tile-hairline, var(--border));
+  background: var(--tile-tint, transparent);
+  color: var(--text);
+}
+
+.landing-story-soon {
+  border: 1px dashed var(--border);
+  color: var(--text-dim);
+}
+
+.landing-story-item h3 {
+  margin: 0;
+  font-size: var(--fs-h3);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.landing-story-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  font-size: var(--fs-xs);
+}
+
+.landing-story-count {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 
 

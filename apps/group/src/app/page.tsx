@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { BrandMark } from '@/components/brand/BrandMark';
+import { LandingStory } from '@/components/landing/LandingStory';
 import { LanguageSelector } from '@/components/layout/LanguageSelector';
 import { HOME_PATH } from '@/lib/postLoginPath';
 import { useAuth } from '@/context/AuthProvider';
@@ -11,9 +12,9 @@ import { useLanguage } from '@/context/LanguageProvider';
 import { useTheme } from '@/context/ThemeProvider';
 
 /**
- * Minimal guest landing: brand mark, one-line pitch and a single
- * «ورود / ثبت‌نام» door. Everyone who is signed in with a completed profile
- * lands on the three-door home page (employer/freelancer · education · material).
+ * Guest landing. The first viewport is the brand hero. Scrolling reveals the
+ * platform description, published departments, and live catalog rows from
+ * /api/showcase. A signed-in user with a completed profile goes to HOME_PATH.
  */
 export default function HomePage() {
   const router = useRouter();
@@ -96,6 +97,7 @@ export default function HomePage() {
           </Link>
         </header>
       </main>
+      <LandingStory copy={copy} />
     </div>
   );
 }
