@@ -154,10 +154,12 @@ describe('departments hub gating for a restricted moderator', () => {
 
   it('offers Academy its courses module when only courses is open', () => {
     const entryPoints = departmentEntryPoints('academy', onlyCourses);
-    // course-exams shares the `courses` access section with the catalog.
+    // Course exams and the lesson motion studio share the `courses` access
+    // section with the catalog. The motion API is guarded by that same section.
     expect(entryPoints.map((entry) => entry.href)).toEqual([
       '/admin/academy/courses',
       '/admin/academy/course-exams',
+      '/admin/academy/motion',
     ]);
   });
 
