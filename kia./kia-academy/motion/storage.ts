@@ -1,9 +1,29 @@
+import { BadRequestException } from '@nestjs/common';
 import { existsSync, mkdirSync, readdirSync, rmSync, statSync, unlinkSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { resolveUnderRoot } from '@kia./platform';
+import { detectAudioMime, extensionForMime } from './audio';
+import { MOTION_LIMITS } from './policy';
+
+const TEXT_FILE = /^(?:list\.txt|line-\d+-(?:title-\d+|body-\d+|code-\d+|instructor)\.txt)$/;
+const AUDIO_FILE =
+  /^(?:narration|tts)-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:mp3|wav|ogg|webm|m4a)$/;
+const VIDEO_FILE = /^video-v\d+\.mp4$/;
 
 export function motionRoot(): string {
   return join(process.cwd(), 'uploads', 'motion-private');
+}
+
+export function isMotionTextFilename(filename: string): boolean {
+  return TEXT_FILE.test(filename);
+}
+
+export function isServerAudioFilename(filename: string): boolean {
+  return AUDIO_FILE.test(filename);
+}
+
+export function isServerVideoFilename(filename: string): boolean {
+  return VIDEO_FILE.test(filename);
 }
 
 export function ensureProjectDir(projectId: string): string {
@@ -17,10 +37,36 @@ export function projectFile(projectId: string, filename: string): string {
   return resolveUnderRoot(motionRoot(), projectId, filename);
 }
 
-export function writeProjectFile(projectId: string, filename: string, data: Buffer | string): string {
+/** Write a server-named drawtext or concat-list file. The name is not taken from a request. */
+export function writeProjectText(projectId: string, filename: string, text: string): string {
+  if (!isMotionTextFilename(filename)) {
+    throw new BadRequestException('Invalid motion text name');
+  }
   const dir = ensureProjectDir(projectId);
   const absolute = resolveUnderRoot(dir, filename);
-  writeFileSync(absolute, data);
+  writeFileSync(absolute, text);
+  return absolute;
+}
+
+/**
+ * Write audio that already passed the MIME, size, and magic-byte checks.
+ * The filename is the server-chosen name from that check, under the private motion directory.
+ */
+export function writeProjectAudio(projectId: string, filename: string, bytes: Buffer): string {
+  const detected = detectAudioMime(bytes);
+  const extension = detected ? extensionForMime(detected) : null;
+  if (
+    !isServerAudioFilename(filename) ||
+    !extension ||
+    !filename.endsWith(extension) ||
+    bytes.length === 0 ||
+    bytes.length > MOTION_LIMITS.audioBytes
+  ) {
+    throw new BadRequestException('Invalid motion audio');
+  }
+  const dir = ensureProjectDir(projectId);
+  const absolute = resolveUnderRoot(dir, filename);
+  writeFileSync(absolute, bytes);
   return absolute;
 }
 

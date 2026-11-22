@@ -46,9 +46,15 @@ Each scene is an ffmpeg color frame with `drawtext`. Persian and Latin share
 DejaVu Sans, which also has the hyphens and bullets used in lesson text. Code
 uses DejaVu Sans Mono. Noto Naskh draws Persian but drops those punctuation
 marks, and librsvg does not shape Arabic, so frames are not SVG text. ffmpeg
-encodes H.264 at 1920×1080 or 1280×720, 24 or 30 fps. The admin preview is a
-sandboxed iframe (`srcdoc`, no scripts). Lesson HTML/CSS is not executed on
-the server.
+encodes H.264 at 1920×1080 or 1280×720, 24 or 30 fps. The admin preview is
+built from scene fields. Title, narration, on-screen text, and code are
+HTML-escaped and shown as text, so lesson markup is not parsed or executed.
+The admin page loads that document in a sandboxed iframe. The finished MP4 is
+written by ffmpeg to a server-chosen `video-vN.mp4` under
+`uploads/motion-private/<projectId>/`, not from the request body. Narration
+uploads and TTS audio are stored only after an allowlisted MIME, a 20 MB cap,
+and magic bytes agree, under a server-chosen name in that same private directory.
+The media response sends `X-Content-Type-Options: nosniff`.
 
 If `ffmpeg` is missing, the job status is Failed and the error says to install
 it. The pipeline never writes a fake mp4.

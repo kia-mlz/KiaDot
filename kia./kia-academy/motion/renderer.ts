@@ -1,6 +1,6 @@
 import { spawn } from 'child_process';
 import { existsSync, statSync } from 'fs';
-import { projectFile, writeProjectFile } from './storage';
+import { isServerAudioFilename, isServerVideoFilename, projectFile, writeProjectText } from './storage';
 
 export interface RenderFrameScene {
   title: string;
@@ -154,6 +154,12 @@ export async function renderStoryboard(request: RenderRequest): Promise<{ bytes:
   if (!request.scenes.length) {
     throw new Error('Cannot render a storyboard with no scenes');
   }
+  if (!isServerVideoFilename(request.outputFilename)) {
+    throw new Error('Rendered video name must be chosen by the server');
+  }
+  if (request.audioFilename && !isServerAudioFilename(request.audioFilename)) {
+    throw new Error('Narration audio name must be chosen by the server');
+  }
   assertFrameFonts();
   if (request.signal.aborted) throw new Error('MOTION_CANCELLED');
 
@@ -165,7 +171,7 @@ export async function renderStoryboard(request: RenderRequest): Promise<{ bytes:
     const segmentName = `seg-${index}.mp4`;
     const segmentPath = projectFile(request.projectId, segmentName);
     const filters = sceneDrawFilters(scene, request.width, request.height, (name, text) =>
-      writeProjectFile(request.projectId, `line-${index}-${name}`, text),
+      writeProjectText(request.projectId, `line-${index}-${name}`, text),
     );
     const duration = String(Math.max(1, scene.durationSec));
     await runFfmpeg(
@@ -195,7 +201,7 @@ export async function renderStoryboard(request: RenderRequest): Promise<{ bytes:
   }
 
   const list = segmentNames.map((name) => `file '${name}'`).join('\n');
-  const listPath = writeProjectFile(request.projectId, 'list.txt', `${list}\n`);
+  const listPath = writeProjectText(request.projectId, 'list.txt', `${list}\n`);
   const silentPath = projectFile(request.projectId, 'silent.mp4');
   await runFfmpeg(
     ['-y', '-f', 'concat', '-safe', '0', '-i', listPath, '-c', 'copy', silentPath],

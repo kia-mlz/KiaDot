@@ -7,12 +7,11 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { randomUUID } from 'crypto';
 import { isFreePreviewLessonIndex } from '@kia./shared';
 import { Prisma, PrismaService } from '@kia./platform';
 import { selectLessonAnalyzer } from './analyzer/openai-compatible-analyzer';
 import { motionAiConfigured, type LessonSource, type MotionWarning } from './analyzer/types';
-import { extensionForMime, sniffAudio, ttsConfigured } from './audio';
+import { inspectMotionTts, inspectMotionUpload, ttsConfigured } from './audio';
 import {
   isContentStale,
   lessonContentHash,
@@ -29,12 +28,11 @@ import { editScene, removeScene, reorderScenes, StoryboardError } from './storyb
 import { buildSubtitleTracks } from './subtitles';
 import {
   cleanupWorkFiles,
-  ensureProjectDir,
   fileSize,
   projectFile,
   removeProjectDir,
   removeProjectFile,
-  writeProjectFile,
+  writeProjectAudio,
 } from './storage';
 import type {
   CreateMotionProjectDto,
@@ -566,15 +564,8 @@ export class MotionService {
 
   async saveAudio(projectId: string, file: { buffer: Buffer; mimetype: string; size: number; originalname: string }) {
     await this.requireProject(projectId);
-    if (!file?.buffer?.length) throw new BadRequestException('فایل صوتی لازم است.');
-    if (file.size > MOTION_LIMITS.audioBytes) {
-      throw new BadRequestException('حجم صدا باید حداکثر ۲۰ مگابایت باشد.');
-    }
-    const mime = sniffAudio(file.buffer, file.mimetype);
-    if (!mime) throw new BadRequestException('نوع فایل صوتی مجاز نیست.');
-    const filename = `narration-${randomUUID()}${extensionForMime(mime)}`;
-    ensureProjectDir(projectId);
-    writeProjectFile(projectId, filename, file.buffer);
+    const accepted = inspectMotionUpload(file);
+    writeProjectAudio(projectId, accepted.filename, accepted.bytes);
     const previous = await this.prisma.motionAudio.findMany({ where: { projectId } });
     for (const row of previous) {
       removeProjectFile(projectId, row.filename);
@@ -583,10 +574,10 @@ export class MotionService {
     await this.prisma.motionAudio.create({
       data: {
         projectId,
-        mime,
-        filename,
-        storagePath: filename,
-        sizeBytes: file.size,
+        mime: accepted.mime,
+        filename: accepted.filename,
+        storagePath: accepted.filename,
+        sizeBytes: accepted.bytes.length,
       },
     });
     await this.prisma.motionVideoProject.update({
@@ -1098,15 +1089,20 @@ export class MotionService {
         const detail = (await response.text()).slice(0, 300);
         return { filename: null, error: `TTS HTTP ${response.status}: ${detail}` };
       }
-      const bytes = Buffer.from(await response.arrayBuffer());
-      const mime = sniffAudio(bytes, 'audio/mpeg') ?? sniffAudio(bytes, 'audio/wav') ?? sniffAudio(bytes, 'audio/mp4');
-      if (!mime) return { filename: null, error: 'TTS response was not a recognized audio file' };
-      const filename = `tts-${randomUUID()}${extensionForMime(mime)}`;
-      writeProjectFile(projectId, filename, bytes);
+      const downloaded = Buffer.from(await response.arrayBuffer());
+      const accepted = inspectMotionTts(downloaded);
+      if (!accepted) return { filename: null, error: 'TTS response was not a recognized audio file' };
+      writeProjectAudio(projectId, accepted.filename, accepted.bytes);
       await this.prisma.motionAudio.create({
-        data: { projectId, mime, filename, storagePath: filename, sizeBytes: bytes.length },
+        data: {
+          projectId,
+          mime: accepted.mime,
+          filename: accepted.filename,
+          storagePath: accepted.filename,
+          sizeBytes: accepted.bytes.length,
+        },
       });
-      return { filename, error: null };
+      return { filename: accepted.filename, error: null };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'TTS failed';
       return { filename: null, error: message };
