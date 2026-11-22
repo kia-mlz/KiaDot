@@ -788,7 +788,7 @@ export class MotionService {
     const scenes = [...project.scenes].sort((a, b) => a.sortOrder - b.sortOrder);
     if (!scenes.length) throw new Error('No scenes');
     let audioFilename = project.audio[0]?.filename ?? null;
-    let audioStatus = project.narrationAudioStatus;
+    let audioStatus: string;
     if (!audioFilename) {
       const synthesized = await this.tryTts(project.id, project.voiceId, scenes);
       if (synthesized.filename) {
