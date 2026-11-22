@@ -1,15 +1,11 @@
 'use client';
 
 import { RequireAuth } from '@/components/auth/RequireAuth';
-import { CentralHome } from '@/components/home/CentralHome';
 import { DepartmentSolarSystem } from '@/components/hub/DepartmentSolarSystem';
 import { HOME_PATH } from '@/lib/postLoginPath';
 
 /**
- * Post-auth landing — the single page every signed-in user lands on after
- * registration/profile completion or login. It now carries the departments
- * solar system (kia. sun + six department planets), which replaced the
- * old door grid.
+ * Post-auth landing. The only content is the department solar system.
  *
  * `learnerFlow` sends guests into the phone OTP flow and users whose profile is
  * still incomplete back to it, so this page only ever renders for a
@@ -21,7 +17,6 @@ export default function HomeGatePage() {
       <div className="page-content home-gate">
         <div className="container hub">
           <DepartmentSolarSystem />
-          <CentralHome />
         </div>
       </div>
     </RequireAuth>
