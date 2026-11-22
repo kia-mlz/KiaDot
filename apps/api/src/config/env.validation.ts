@@ -70,6 +70,14 @@ export const envValidationSchema = Joi.object({
   SMTP_PASS: Joi.string().optional(),
   SMTP_FROM: Joi.string().optional(),
   APP_URL: Joi.string().optional(),
+  /** Optional OpenAI-compatible lesson analyzer. All three must be set or the deterministic analyzer is used. */
+  MOTION_AI_BASE_URL: Joi.string().uri().optional().allow(''),
+  MOTION_AI_API_KEY: Joi.string().optional().allow(''),
+  MOTION_AI_MODEL: Joi.string().optional().allow(''),
+  /** Optional TTS. Unset means narration audio stays unconfigured until an instructor uploads a file. */
+  MOTION_TTS_BASE_URL: Joi.string().uri().optional().allow(''),
+  MOTION_TTS_API_KEY: Joi.string().optional().allow(''),
+  MOTION_TTS_MODEL: Joi.string().optional().allow(''),
 }).custom((value, helpers) => {
   // Access and refresh tokens must not share a signing key in production —
   // a stolen refresh JWT would otherwise verify as an access token.
