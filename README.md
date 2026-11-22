@@ -102,10 +102,10 @@ KiaDot/
 │       ├── src/group/        # PLATFORM SHELL: auth · admin · sms · contact ·
 │       │                     #   health · support · commerce · search
 │       └── prisma/
-│           ├── schema.prisma       # 102 models → generates client into platform
+│           ├── schema.prisma       # generates the client into platform
 │           └── migrations/         # init_baseline + hardening migrations
 ├── kia./                 # ★ THE SIX DEPARTMENTS — each a separate package
-│   ├── kia-academy/     # courses, exams, games, activities, certificates, classes
+│   ├── kia-academy/     # courses, exams, games, motion studio, activities, certificates
 │   ├── kia-event/       # competitions, challenges, bootcamps, live events
 │   ├── kia-work/        # jobs, freelance projects, specialist profiles
 │   ├── kia-material/    # Material Studio UI + catalog API (./catalog)
@@ -287,6 +287,7 @@ Report vulnerabilities responsibly per [`SECURITY.md`](SECURITY.md) — please u
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)                               | Current KiaDot architecture decision                         |
 | [`docs/DATABASE.md`](docs/DATABASE.md)                                       | Schema ownership and migration notes                         |
 | [`docs/API_DOCUMENTATION.md`](docs/API_DOCUMENTATION.md)                     | HTTP surface added for the ecosystem                         |
+| [`docs/MOTION_STUDIO.md`](docs/MOTION_STUDIO.md)                             | Academy lesson motion studio: analyze, approve, render      |
 | [`docs/AUTHENTICATION.md`](docs/AUTHENTICATION.md)                           | Registration, sessions, verification                         |
 | [`docs/AUTHORIZATION.md`](docs/AUTHORIZATION.md)                             | Platform and department permissions                          |
 | [`docs/DEPARTMENTS.md`](docs/DEPARTMENTS.md)                                 | The six departments and how they connect                     |
