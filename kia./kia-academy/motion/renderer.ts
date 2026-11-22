@@ -25,19 +25,18 @@ export interface RenderRequest {
   signal: AbortSignal;
 }
 
-const ARABIC_FONT = '/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf';
+const SANS_FONT = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
 const MONO_FONT = '/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf';
 
-function escapeXml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+function frameText(text: string): string {
+  return text
+    .replace(/\r/g, '')
+    .replace(/[\u2010-\u2015]/g, '-')
+    .replace(/[•●▪‣]/g, '-');
 }
 
 function wrapLines(text: string, width: number, maxLines: number): string[] {
-  const words = text.replace(/\r/g, '').split(/\n+/).flatMap((line) => {
+  const words = frameText(text).split(/\n+/).flatMap((line) => {
     const parts: string[] = [];
     let current = '';
     for (const word of line.split(/\s+/)) {
@@ -56,42 +55,49 @@ function wrapLines(text: string, width: number, maxLines: number): string[] {
   return words.filter((line) => line.trim().length > 0).slice(0, maxLines);
 }
 
-export function sceneSvg(scene: RenderFrameScene, width: number, height: number): string {
-  const title = wrapLines(scene.onScreenText || scene.title, 42, 2);
-  const narration = wrapLines(scene.narration, scene.code ? 36 : 48, scene.code ? 4 : 8);
-  const code = scene.code
+function fontFor(mono: boolean): string {
+  return mono ? MONO_FONT : SANS_FONT;
+}
+
+/** One drawtext per line. librsvg does not shape Arabic, so frames use ffmpeg drawtext. */
+export function sceneDrawFilters(
+  scene: RenderFrameScene,
+  width: number,
+  height: number,
+  writeLine: (name: string, text: string) => string,
+): string {
+  const titleWidth = Math.max(16, Math.floor((width - 160) / 28));
+  const bodyWidth = Math.max(18, Math.floor((width - 160) / 18));
+  const title = wrapLines(scene.onScreenText || scene.title, titleWidth, 2);
+  const code = frameText(scene.code)
     .replace(/\t/g, '  ')
     .split('\n')
-    .map((line) => line.slice(0, 72))
-    .slice(0, 12);
-  const instructor = scene.code && scene.codeSource === 'instructor' ? 'ویرایش مدرس' : '';
-  const titleSvg = title
-    .map(
-      (line, index) =>
-        `<text x="${width - 80}" y="${140 + index * 64}" text-anchor="end" fill="#f4f1ea" font-family="Noto Naskh Arabic" font-size="48">${escapeXml(line)}</text>`,
-    )
-    .join('');
-  const bodySvg = narration
-    .map(
-      (line, index) =>
-        `<text x="${width - 80}" y="${280 + index * 42}" text-anchor="end" fill="#d9d4c8" font-family="Noto Naskh Arabic" font-size="28">${escapeXml(line)}</text>`,
-    )
-    .join('');
-  const codeSvg = code
-    .map(
-      (line, index) =>
-        `<text x="72" y="${height - 80 - (code.length - index) * 32}" fill="#d7e6c8" font-family="DejaVu Sans Mono" font-size="22">${escapeXml(line)}</text>`,
-    )
-    .join('');
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-  <rect width="100%" height="100%" fill="#14161c"/>
-  <rect x="0" y="0" width="18" height="100%" fill="#e6e1d6"/>
-  ${titleSvg}
-  ${bodySvg}
-  ${instructor ? `<text x="72" y="80" fill="#e6c07b" font-family="Noto Naskh Arabic" font-size="24">${escapeXml(instructor)}</text>` : ''}
-  ${codeSvg}
-</svg>`;
+    .map((line) => line.trimEnd().slice(0, 78))
+    .filter((line) => line.trim().length > 0)
+    .slice(0, 8);
+  const bodyBudget = Math.max(2, Math.floor((height - 240 - code.length * 36) / 52));
+  const narration = wrapLines(scene.narration, bodyWidth, scene.code ? Math.min(4, bodyBudget) : bodyBudget);
+  const filters = [`drawbox=x=0:y=0:w=18:h=ih:color=0xe6e1d6:t=fill`];
+  const push = (name: string, text: string, font: string, size: number, color: string, x: string, y: number) => {
+    const file = writeLine(name, text);
+    filters.push(
+      `drawtext=expansion=none:fontfile=${font}:textfile=${file}:fontsize=${size}:fontcolor=${color}:x=${x}:y=${y}`,
+    );
+  };
+  title.forEach((line, index) => {
+    push(`title-${index}.txt`, line, fontFor(false), 46, '0xf4f1ea', 'w-text_w-72', 110 + index * 64);
+  });
+  narration.forEach((line, index) => {
+    push(`body-${index}.txt`, line, fontFor(false), 30, '0xd9d4c8', 'w-text_w-72', 250 + index * 52);
+  });
+  if (scene.code && scene.codeSource === 'instructor') {
+    push('instructor.txt', 'ویرایش مدرس', SANS_FONT, 24, '0xe6c07b', '72', 72);
+  }
+  code.forEach((line, index) => {
+    const y = height - 64 - (code.length - index) * 34;
+    push(`code-${index}.txt`, line, MONO_FONT, 22, '0xd7e6c8', '72', y);
+  });
+  return filters.join(',');
 }
 
 function runFfmpeg(args: string[], signal: AbortSignal): Promise<void> {
@@ -137,9 +143,9 @@ export async function assertFfmpegAvailable(): Promise<void> {
 }
 
 export function assertFrameFonts(): void {
-  if (!existsSync(ARABIC_FONT) || !existsSync(MONO_FONT)) {
+  if (!existsSync(SANS_FONT) || !existsSync(MONO_FONT)) {
     throw new Error(
-      `Frame fonts are missing (${ARABIC_FONT}, ${MONO_FONT}). Install fonts-noto-core and fonts-dejavu-core. See docs/MOTION_STUDIO.md.`,
+      `Frame fonts are missing (${SANS_FONT}, ${MONO_FONT}). Install fonts-dejavu-core. See docs/MOTION_STUDIO.md.`,
     );
   }
 }
@@ -156,23 +162,23 @@ export async function renderStoryboard(request: RenderRequest): Promise<{ bytes:
     if (request.signal.aborted) throw new Error('MOTION_CANCELLED');
     const scene = request.scenes[index];
     if (!scene) continue;
-    const svgName = `frame-${index}.svg`;
     const segmentName = `seg-${index}.mp4`;
-    const svgPath = writeProjectFile(request.projectId, svgName, sceneSvg(scene, request.width, request.height));
     const segmentPath = projectFile(request.projectId, segmentName);
+    const filters = sceneDrawFilters(scene, request.width, request.height, (name, text) =>
+      writeProjectFile(request.projectId, `line-${index}-${name}`, text),
+    );
+    const duration = String(Math.max(1, scene.durationSec));
     await runFfmpeg(
       [
         '-y',
-        '-loop',
-        '1',
+        '-f',
+        'lavfi',
         '-i',
-        svgPath,
-        '-t',
-        String(Math.max(1, scene.durationSec)),
+        `color=c=0x14161c:s=${request.width}x${request.height}:d=${duration}:r=${request.fps}`,
         '-vf',
-        `scale=${request.width}:${request.height},format=yuv420p`,
-        '-r',
-        String(request.fps),
+        filters,
+        '-t',
+        duration,
         '-c:v',
         'libx264',
         '-pix_fmt',

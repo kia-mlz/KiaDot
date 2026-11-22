@@ -40,7 +40,13 @@ export function cleanupWorkFiles(projectId: string, keep: string[]): void {
   const keepSet = new Set(keep);
   for (const name of readdirSync(dir)) {
     if (keepSet.has(name)) continue;
-    if (name.endsWith('.svg') || name.startsWith('seg-') || name === 'silent.mp4' || name === 'list.txt') {
+    if (
+      name.endsWith('.svg') ||
+      name.startsWith('seg-') ||
+      name.startsWith('line-') ||
+      name === 'silent.mp4' ||
+      name === 'list.txt'
+    ) {
       unlinkSync(join(dir, name));
     }
   }

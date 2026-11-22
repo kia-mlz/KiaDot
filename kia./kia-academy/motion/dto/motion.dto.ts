@@ -196,6 +196,13 @@ export class PublishMotionDto {
   @IsOptional()
   @IsIn(POSITIONS)
   position?: (typeof POSITIONS)[number];
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  minWatchPercent?: number | null;
 }
 
 export class SubtitleWriteDto {

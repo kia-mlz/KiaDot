@@ -351,7 +351,7 @@ export class MotionService {
         videoFilename: filename,
         contentHash: project.contentHash,
         videoVersion: project.videoVersion,
-        minWatchPercent: null,
+        minWatchPercent: dto.minWatchPercent ?? null,
       },
       update: {
         position: dto.position ?? previous?.position ?? 'BEFORE_BODY',
@@ -360,6 +360,7 @@ export class MotionService {
         videoVersion: project.videoVersion,
         stale: false,
         publishedAt: new Date(),
+        ...(dto.minWatchPercent !== undefined ? { minWatchPercent: dto.minWatchPercent } : {}),
       },
     });
     await this.prisma.motionVideoProject.update({
