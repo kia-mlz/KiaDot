@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import type { CourseGamesSummary as Summary } from '@kia./shared';
 import { useAuth } from '@/context/AuthProvider';
 import { useLanguage } from '@/context/LanguageProvider';
@@ -43,23 +42,6 @@ export function CourseGamesSummary({ slug }: { slug: string }) {
         <div><dt>{copy.streak}</dt><dd>{data.streakDays}</dd></div>
       </dl>
       <div className="eg-bar" aria-hidden="true"><span style={{ width: `${data.progressPct}%` }} /></div>
-      <ul>
-        {data.games.map((game) => (
-          <li key={game.id}>
-            <div>
-              <strong>{game.title}</strong>
-              <span>{game.lessonTitle}</span>
-            </div>
-            <span>{copy.status[game.status] ?? game.status}</span>
-            <span>{copy.difficulty[game.difficulty]}</span>
-            <span>{game.estimatedMin} {copy.minutes}</span>
-            <span>{game.points} {copy.points}</span>
-            {game.locked ? null : (
-              <Link href={`/learn/${slug}/${game.lessonSlug}`}>{copy.continue}</Link>
-            )}
-          </li>
-        ))}
-      </ul>
     </section>
   );
 }
