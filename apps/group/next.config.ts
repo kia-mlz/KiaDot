@@ -50,6 +50,10 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  env: {
+    // Client video URLs need the Pages base path. Local and Docker stay same-origin.
+    NEXT_PUBLIC_BASE_PATH: isGitHubPages ? githubPagesBasePath : '',
+  },
   // Playwright and curl hit 127.0.0.1; Next blocks dev assets from that host otherwise.
   allowedDevOrigins: ['127.0.0.1', 'localhost'],
   // Workspace packages are transpiled from source (tsconfig paths map them to
