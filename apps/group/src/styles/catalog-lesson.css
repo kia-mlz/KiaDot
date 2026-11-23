@@ -603,6 +603,13 @@
   height: 100%;
 }
 
+.motion-player:fullscreen .lesson-video video,
+.motion-player:-webkit-full-screen .lesson-video video,
+.kia-lesson-shell .motion-player:fullscreen .lesson-video video {
+  max-height: none;
+  height: 100%;
+}
+
 .kia-lesson-shell .lesson-description {
   color: var(--text-dim);
   margin-top: var(--space-2);
@@ -996,31 +1003,281 @@
   background: color-mix(in srgb, var(--dept, var(--dept-academy)) 14%, transparent);
 }
 
+.motion-player {
+  position: relative;
+  outline: none;
+  background: #000;
+  color: #fff;
+}
+
+.motion-player:focus-visible {
+  outline: 2px solid var(--dept, var(--dept-academy));
+  outline-offset: 2px;
+}
+
+.motion-stage {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  overflow: hidden;
+}
+
+.kia-lesson-shell .motion-player .lesson-video video,
 .motion-player video {
   width: 100%;
-  background: #111;
+  height: 100%;
+  max-height: none;
+  object-fit: contain;
+  background: #000;
+  cursor: pointer;
 }
 
-.motion-controls {
+.motion-center,
+.motion-top,
+.motion-bar {
+  position: absolute;
+  z-index: 2;
+  transition: opacity 0.18s ease;
+}
+
+.motion-player.is-idle .motion-center,
+.motion-player.is-idle .motion-top,
+.motion-player.is-idle .motion-bar {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .motion-player.is-idle .motion-stage {
+    cursor: none;
+  }
+
+  .motion-player.is-idle .motion-stage video {
+    cursor: none;
+  }
+}
+
+.motion-center {
+  inset: 0;
+  margin: auto;
+  width: 4.25rem;
+  height: 4.25rem;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--dept, var(--dept-academy)) 86%, #000);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.motion-center:hover,
+.motion-center:focus-visible {
+  background: var(--dept, var(--dept-academy));
+}
+
+.motion-top {
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
   align-items: center;
-  padding: 0.75rem;
+  gap: 0.45rem;
+  padding: 0.7rem 0.85rem 1.6rem;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.72), transparent);
+  pointer-events: none;
 }
 
-.motion-scrub {
-  flex: 1 1 8rem;
-  min-width: 6rem;
+.motion-top .lesson-video-label,
+.motion-top .meta-chip {
+  color: #fff;
 }
 
-.motion-speed {
-  width: auto;
+.motion-bar {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  gap: 0.15rem;
+  padding: 1.7rem 0.65rem 0.4rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.82), transparent);
+}
+
+.motion-seek {
+  position: relative;
+  height: 1.1rem;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.motion-seek-track {
+  position: relative;
+  width: 100%;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+  overflow: hidden;
+}
+
+.motion-seek:hover .motion-seek-track,
+.motion-seek:focus-visible .motion-seek-track {
+  height: 5px;
+}
+
+.motion-seek-buffered,
+.motion-seek-played {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.motion-seek-buffered {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.motion-seek-played {
+  left: 0;
+  background: var(--dept, var(--dept-academy));
+}
+
+.motion-seek-thumb {
+  position: absolute;
+  top: 50%;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--dept, var(--dept-academy));
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35);
+}
+
+.motion-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
   min-height: 2.25rem;
 }
 
-.motion-time {
+.motion-icon-btn,
+.motion-rate-btn {
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  border-radius: 999px;
+}
+
+.motion-icon-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 auto;
+}
+
+.motion-rate-btn {
+  min-width: 2.6rem;
+  height: 2.25rem;
+  padding: 0 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+.motion-icon-btn:hover,
+.motion-icon-btn:focus-visible,
+.motion-rate-btn:hover,
+.motion-rate-btn:focus-visible {
+  background: rgba(255, 255, 255, 0.16);
+  outline: none;
+}
+
+.motion-time {
+  display: inline-flex;
+  align-items: baseline;
+  margin-inline-start: 0.2rem;
+  color: #fff;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.motion-time-gap {
+  opacity: 0.8;
+}
+
+.motion-spacer {
+  flex: 1;
+}
+
+.motion-volume {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.motion-volume input[type='range'] {
+  width: 4.6rem;
+  accent-color: var(--dept, var(--dept-academy));
+  cursor: pointer;
+}
+
+.motion-pop {
+  position: relative;
+}
+
+.motion-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.35rem);
+  z-index: 3;
+  min-width: 6.5rem;
+  margin: 0;
+  padding: 0.3rem;
+  list-style: none;
+  background: rgba(16, 16, 16, 0.96);
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+}
+
+.motion-menu button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  text-align: start;
+  padding: 0.4rem 0.65rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.motion-menu button.is-current,
+.motion-menu button:hover,
+.motion-menu button:focus-visible {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--dept, var(--dept-academy));
+}
+
+.motion-player:fullscreen,
+.motion-player:-webkit-full-screen {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  display: flex;
+  background: #000;
+}
+
+.motion-player:fullscreen .motion-stage,
+.motion-player:-webkit-full-screen .motion-stage {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
 }
 
 .motion-studio {
@@ -1123,13 +1380,27 @@
   border: 0;
 }
 
-@media (max-width: 420px) {
-  .motion-controls {
-    align-items: stretch;
+@media (max-width: 520px) {
+  .motion-center {
+    width: 3.4rem;
+    height: 3.4rem;
   }
 
-  .motion-speed,
-  .motion-scrub {
-    width: 100%;
+  .motion-icon-btn {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .motion-volume input[type='range'] {
+    width: 3.2rem;
+  }
+
+  .motion-time {
+    font-size: 0.72rem;
+  }
+
+  .motion-rate-btn {
+    min-width: 2.2rem;
+    padding: 0 0.25rem;
   }
 }

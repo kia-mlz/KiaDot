@@ -3147,6 +3147,8 @@ export const fa = {
     pause: 'مکث',
     progress: 'پیشرفت',
     volume: 'صدا',
+    mute: 'بی‌صدا',
+    unmute: 'با صدا',
     speed: 'سرعت',
     subtitles: 'زیرنویس',
     subtitlesOff: 'خاموش',
