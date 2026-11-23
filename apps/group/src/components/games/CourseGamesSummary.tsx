@@ -43,7 +43,7 @@ export function CourseGamesSummary({ slug }: { slug: string }) {
         <div><dt>{copy.streak}</dt><dd>{data.streakDays}</dd></div>
       </dl>
       <div className="eg-bar" aria-hidden="true"><span style={{ width: `${data.progressPct}%` }} /></div>
-      <ul className="eg-course-list">
+      <ul>
         {data.games.map((game) => (
           <li key={game.id}>
             <div>
