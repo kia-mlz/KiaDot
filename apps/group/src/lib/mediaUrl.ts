@@ -1,6 +1,9 @@
+import { lessonVideoSrc } from '@/lib/publishedLessonVideos';
+
 /** Resolve a media path returned by the API for use in <video src>. */
 export function mediaUrl(path: string | null | undefined): string | null {
   if (!path) return null;
+  if (path.includes('/lesson-videos/') && path.endsWith('.mp4')) return lessonVideoSrc(path);
   if (path.startsWith('blob:')) return path;
 
   if (path.startsWith('http://') || path.startsWith('https://')) {

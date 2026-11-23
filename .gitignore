@@ -49,7 +49,10 @@ pnpm-debug.log*
 apps/api/prisma/*.db
 apps/api/prisma/*.db-journal
 
-# User uploads
+# User uploads. A parent directory ignore cannot be reopened for one nested
+# file, so published lesson films are not stored here. They are committed at
+# apps/group/public/lesson-videos/<course>/<lesson>.mp4. Frames, narration,
+# tickets, and material stay ignored.
 apps/api/uploads/
 uploads/
 

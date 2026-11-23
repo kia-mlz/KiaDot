@@ -28,6 +28,7 @@ import { editScene, removeScene, reorderScenes, StoryboardError } from './storyb
 import { buildSubtitleTracks } from './subtitles';
 import {
   cleanupWorkFiles,
+  copyPublishedLessonVideo,
   fileSize,
   projectFile,
   removeProjectDir,
@@ -331,6 +332,7 @@ export class MotionService {
     } catch {
       throw new BadRequestException('فایل ویدیو پیدا نشد.');
     }
+    copyPublishedLessonVideo(absolute, lesson.course.slug, lesson.slug);
     const previous = await this.prisma.motionLessonVideo.findUnique({ where: { lessonId: project.lessonId } });
     if (previous && previous.projectId !== project.id) {
       await this.prisma.motionVideoProject.update({

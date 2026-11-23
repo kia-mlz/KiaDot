@@ -79,7 +79,15 @@ Academy colour comes from `@kia./brand`. Paper and ink use the documented
 Temporary stage HTML and PNG frames live under
 `uploads/motion-private/<projectId>/` and are not public URLs. Cleanup removes
 them and keeps the finished mp4. The mp4 is a server-chosen `video-vN.mp4`,
-not a name from the request. Narration uploads and TTS audio are stored only
+not a name from the request. Publish also copies that file to
+`apps/group/public/lesson-videos/<courseSlug>/<lessonSlug>.mp4` when the web
+`public` folder is present. Add the same path to
+`apps/group/public/lesson-videos/index.json` and commit both. The lesson page
+plays that file, including on the GitHub Pages mirror, which has no API. The
+private `/api/academy/motion/media` URL still needs the API process and the
+uploads disk. Temp frames, narration, and other uploads stay gitignored. Only
+`uploads/lesson-videos/**/*.mp4` is allowed through that ignore, and the site
+copy lives in the web `public` folder. Narration uploads and TTS audio are stored only
 after an allowlisted MIME, a 20 MB cap, and magic bytes agree, under a
 server-chosen name in that same private directory. The media response sends
 `X-Content-Type-Options: nosniff`.

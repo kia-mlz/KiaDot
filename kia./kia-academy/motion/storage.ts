@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { existsSync, mkdirSync, readdirSync, rmSync, statSync, unlinkSync, writeFileSync } from 'fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, unlinkSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { resolveUnderRoot } from '@kia./platform';
 import { detectAudioMime, extensionForMime } from './audio';
@@ -10,6 +10,32 @@ const FRAME_FILE = /^frame-\d+-\d{4}\.png$/;
 const AUDIO_FILE =
   /^(?:narration|tts)-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:mp3|wav|ogg|webm|m4a)$/;
 const VIDEO_FILE = /^video-v\d+\.mp4$/;
+const LESSON_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/** Directory that Next and GitHub Pages both serve. Null when this process has no web public folder. */
+export function groupPublicRoot(): string | null {
+  const candidates = [
+    join(process.cwd(), 'apps', 'group', 'public'),
+    join(process.cwd(), '..', 'group', 'public'),
+  ];
+  return candidates.find((dir) => existsSync(dir)) ?? null;
+}
+
+export function publishedLessonVideoPath(publicRoot: string, courseSlug: string, lessonSlug: string): string | null {
+  if (!LESSON_SLUG.test(courseSlug) || !LESSON_SLUG.test(lessonSlug)) return null;
+  return join(publicRoot, 'lesson-videos', courseSlug, `${lessonSlug}.mp4`);
+}
+
+/** Copy a finished render into the committed public film for that lesson. */
+export function copyPublishedLessonVideo(source: string, courseSlug: string, lessonSlug: string): string | null {
+  const root = groupPublicRoot();
+  if (!root) return null;
+  const dest = publishedLessonVideoPath(root, courseSlug, lessonSlug);
+  if (!dest || !existsSync(source)) return null;
+  mkdirSync(join(dest, '..'), { recursive: true });
+  copyFileSync(source, dest);
+  return dest;
+}
 
 export function motionRoot(): string {
   return join(process.cwd(), 'uploads', 'motion-private');

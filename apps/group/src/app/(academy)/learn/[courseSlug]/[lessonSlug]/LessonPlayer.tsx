@@ -26,6 +26,11 @@ import { api, ApiError } from '@/lib/api';
 import type { PublishedMotionVideo } from '@/lib/motionTypes';
 import { markdownToHtml } from '@/lib/markdown';
 import { mediaUrl } from '@/lib/mediaUrl';
+import {
+  loadPublishedLessonVideos,
+  publishedVideoFromManifest,
+  staticPublishedVideo,
+} from '@/lib/publishedLessonVideos';
 
 export default function LessonPlayerPage() {
   const params = useParams<{ courseSlug: string; lessonSlug: string }>();
@@ -244,21 +249,30 @@ function LessonPlayerContent({
   };
 
   useEffect(() => {
-    if (!lesson?.id) return;
+    if (!lesson?.id || !courseSlug || !lessonSlug) return;
     let alive = true;
     setMotion(null);
-    api
-      .motionLesson(lesson.id)
-      .then((value) => {
-        if (alive) setMotion(value);
-      })
-      .catch(() => {
-        if (alive) setMotion(null);
-      });
+    Promise.all([
+      api.motionLesson(lesson.id).catch(() => null),
+      loadPublishedLessonVideos().then((manifest) =>
+        publishedVideoFromManifest(manifest, courseSlug, lessonSlug),
+      ),
+    ]).then(([remote, file]) => {
+      if (!alive) return;
+      if (remote && file) {
+        setMotion({ ...remote, videoUrl: file });
+        return;
+      }
+      if (remote) {
+        setMotion(remote);
+        return;
+      }
+      setMotion(file ? staticPublishedVideo(lesson.id, file) : null);
+    });
     return () => {
       alive = false;
     };
-  }, [lesson?.id]);
+  }, [courseSlug, lesson?.id, lessonSlug]);
 
   const parsedContent = useMemo(() => {
     if (!lesson) return null;
@@ -485,7 +499,7 @@ function LessonPlayerContent({
 
               {motion?.position === 'AFTER_OBJECTIVES' ? null : motionPlayer}
 
-              <LessonVideo src={videoSrc} title={lesson.title} />
+              {motion ? null : <LessonVideo src={videoSrc} title={lesson.title} />}
 
               {lessonBody}
 
