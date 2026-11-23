@@ -102,18 +102,6 @@
   transition: width 0.25s ease;
 }
 
-.eg-course-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.45rem; }
-.eg-course-list li {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) repeat(4, auto) auto;
-  gap: 0.6rem;
-  align-items: center;
-  padding: 0.65rem 0.2rem;
-  border-bottom: 1px solid var(--ink-100);
-}
-.eg-course-list span, .eg-course-list strong { display: block; }
-.eg-course-list li > div span { color: var(--ink-500); font-size: 0.8rem; }
-
 .eg-choice, .eg-sim fieldset, .eg-match label, .eg-slot, .eg-blocks li {
   border: 1px solid var(--ink-200);
   border-radius: 12px;
@@ -170,7 +158,6 @@
 
 @media (max-width: 720px) {
   .eg-play { padding: 0.9rem; border-radius: 16px; }
-  .eg-course-list li { grid-template-columns: 1fr 1fr; }
   .eg-head { align-items: flex-start; }
   .eg-code { min-height: 180px; }
 }
