@@ -260,7 +260,9 @@ function LessonPlayerContent({
     ]).then(([remote, file]) => {
       if (!alive) return;
       if (remote && file) {
-        setMotion({ ...remote, videoUrl: file });
+        // The committed film is the picture. Project subtitle cues are timed to an
+        // older render and would paint the lesson paragraph over the frame.
+        setMotion({ ...remote, videoUrl: file, subtitles: [] });
         return;
       }
       if (remote) {

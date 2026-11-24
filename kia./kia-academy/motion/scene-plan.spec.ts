@@ -56,7 +56,23 @@ describe('planSceneVisual', () => {
     expect(plan.properties).toEqual([]);
     expect(plan.cues.every((cue) => !cue.text.includes('<') && !cue.text.includes('html'))).toBe(true);
     expect(plan.animated).toBe(true);
-    expect(plan.cues.map((cue) => cue.kind)).toEqual(expect.arrayContaining(['label', 'shape']));
+    expect(plan.cues.map((cue) => cue.kind)).toEqual(expect.arrayContaining(['label', 'shape', 'icon']));
+    expect(plan.cues.some((cue) => cue.kind === 'metaphor')).toBe(false);
+  });
+
+  it('ends a structure beat with a picture metaphor, not a paragraph', () => {
+    const plan = planSceneVisual(
+      scene({
+        title: 'ساختار',
+        onScreenText: 'ساختار',
+        narration: 'HTML اسکلت صفحه است. ساختار را با شکل نشان بده، نه با یک کارت متن.',
+      }),
+    );
+
+    expect(plan.mode).toBe('theory');
+    expect(plan.cues.some((cue) => cue.kind === 'icon')).toBe(true);
+    expect(plan.cues.some((cue) => cue.kind === 'metaphor' && cue.text === 'skeleton')).toBe(true);
+    expect(plan.cues.find((cue) => cue.kind === 'metaphor')?.text).not.toContain('پاراگراف');
   });
 
   it('changes only the CSS properties the scene names', () => {
@@ -136,6 +152,12 @@ describe('stage document', () => {
     expect(html).toContain('&lt;html&gt;');
     expect(html).toContain('var(--t)');
     expect(html).toContain('transform:');
+    expect(html).toContain('class="mark"');
+    expect(html).toContain('class="type"');
+    expect(html).toContain('clip-path:');
+    expect(html).toContain('class="bones"');
+    expect(html).toContain('class="pop-icon"');
+    expect(visible).not.toContain('radial-gradient');
     expect(html).not.toMatch(/<script/i);
     expect(html.match(/<style>/g)).toHaveLength(1);
   });
