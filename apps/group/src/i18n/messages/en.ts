@@ -751,6 +751,8 @@ export const en = {
       recent: 'Recent exams',
       overall: 'Readiness average',
       itemLabel: 'Readiness exam',
+      courseLabel: 'Course exam',
+      notTaken: 'Not taken yet',
       loadError: 'Could not load exam results.',
     },
     bootcamps: {
@@ -1364,7 +1366,8 @@ export const en = {
       saving: 'Saving…',
       saved: 'Saved',
       timeLeft: 'Time left',
-      expiredBanner: "Time is up. Press 'Submit exam' to see your result.",
+      expiredBanner: 'Time is up. Start a fresh attempt.',
+      restart: 'Start a fresh attempt',
       resultTitle: 'Exam result',
       passed: 'Great job — you passed!',
       failed: 'You did not pass — you can try again.',

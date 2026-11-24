@@ -12,6 +12,9 @@ export function TestResultsCard() {
   const router = useRouter();
   const { t, format } = useLanguage();
   const [tests, setTests] = useState<ReadinessTestSummary[]>([]);
+  const [courseExams, setCourseExams] = useState<
+    Array<{ id: string; title: string; courseSlug: string; score: number | null; passed: boolean | null }>
+  >([]);
   const [skills, setSkills] = useState<Array<{ label: string; value: number }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -20,10 +23,25 @@ export function TestResultsCard() {
     setLoading(true);
     setError('');
     try {
-      const [history, report] = await Promise.all([
+      const [history, report, exams] = await Promise.all([
         api.listReadinessTests(),
         api.getTestReport().catch(() => null),
+        api.listMyCourseExams().catch(() => []),
       ]);
+      const rows = await Promise.all(
+        exams.slice(0, 6).map(async (exam) => {
+          const attempts = await api.listCourseExamAttempts(exam.id).catch(() => []);
+          const latest = attempts.find((attempt) => attempt.status === 'SUBMITTED') ?? null;
+          return {
+            id: exam.id,
+            title: exam.title,
+            courseSlug: exam.courseSlug,
+            score: latest?.score ?? null,
+            passed: latest?.passed ?? null,
+          };
+        }),
+      );
+      setCourseExams(rows);
       setTests(history.slice(0, 4));
       const moduleScores = report?.readiness?.percentages
         ? Object.entries(report.readiness.percentages).map(([label, value]) => ({
@@ -62,13 +80,20 @@ export function TestResultsCard() {
         <button
           type="button"
           className="dash-btn-ghost"
-          onClick={() => router.push('/readiness')}
+          onClick={() => {
+            const open = courseExams.find((exam) => exam.score == null) ?? courseExams[0];
+            if (tests.length === 0 && open) {
+              router.push(`/courses/${open.courseSlug}/exams/${open.id}`);
+              return;
+            }
+            router.push('/readiness');
+          }}
         >
           {t('dashboard.tests.cta')}
         </button>
       }
     >
-      {tests.length === 0 ? (
+      {tests.length === 0 && courseExams.length === 0 ? (
         <EmptyState
           icon="📝"
           text={t('dashboard.tests.empty')}
@@ -93,6 +118,30 @@ export function TestResultsCard() {
               ))}
             </div>
           ) : null}
+          {courseExams.length > 0 ? (
+            <div className="dash-divider-block">
+              <p className="dash-section-label">{t('dashboard.tests.courseLabel')}</p>
+              {courseExams.map((exam) => (
+                <button
+                  key={exam.id}
+                  type="button"
+                  className="dash-test-row"
+                  onClick={() => router.push(`/courses/${exam.courseSlug}/exams/${exam.id}`)}
+                >
+                  {exam.passed ? (
+                    <CheckCircle2 size={14} color="var(--progress)" aria-label={t('dashboard.testHistory.passed')} />
+                  ) : (
+                    <XCircle size={14} color="var(--negative)" aria-label={t('dashboard.testHistory.needsWork')} />
+                  )}
+                  <span className="dash-test-row__title">{exam.title}</span>
+                  <span className={`mono ltr-isolate ${exam.passed ? 'is-pass' : 'is-fail'}`}>
+                    {exam.score == null ? t('dashboard.tests.notTaken') : `${format.number(Math.round(exam.score))}٪`}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {tests.length > 0 ? (
           <div className="dash-divider-block">
             <p className="dash-section-label">{t('dashboard.tests.recent')}</p>
             {tests.map((test) => (
@@ -118,6 +167,7 @@ export function TestResultsCard() {
               </button>
             ))}
           </div>
+          ) : null}
         </div>
       )}
     </CardShell>

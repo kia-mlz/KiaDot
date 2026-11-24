@@ -7,8 +7,9 @@ import type {
 } from '@kia./shared';
 import { CheckCircle2, Loader2, Timer, XCircle } from 'lucide-react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { RequireAuth } from '@/components/auth/RequireAuth';
 import { useLanguage } from '@/context/LanguageProvider';
 import { api, ApiError } from '@/lib/api';
 
@@ -17,6 +18,15 @@ type ExamAnswer =
 type ExamAnswers = Record<string, ExamAnswer>;
 
 export default function CourseExamRunner() {
+  const pathname = usePathname();
+  return (
+    <RequireAuth nextPath={pathname || '/courses'} learnerFlow>
+      <CourseExamRunnerBody />
+    </RequireAuth>
+  );
+}
+
+function CourseExamRunnerBody() {
   const { slug, examId } = useParams<{ slug: string; examId: string }>();
   const router = useRouter();
   const { t } = useLanguage();
@@ -130,7 +140,23 @@ export default function CourseExamRunner() {
     });
   };
 
+  const restart = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      const next = await api.startCourseExam(examId);
+      setSession(next);
+      setAnswers(next.savedAnswers);
+      setNow(Date.now());
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('courses.runner.loadError'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const submit = async () => {
+    if (expired) return;
     if (!session) return;
     setBusy(true);
     setError('');
@@ -293,6 +319,7 @@ export default function CourseExamRunner() {
                         type={q.type === 'single_choice' ? 'radio' : 'checkbox'}
                         name={`q-${q.id}`}
                         checked={checked}
+                        disabled={expired}
                         onChange={() =>
                           q.type === 'single_choice'
                             ? setSingle(q.id, opt.id)
@@ -308,14 +335,25 @@ export default function CourseExamRunner() {
           })}
         </div>
         <div className="catalog-actions" style={{ marginTop: '1rem' }}>
-          <button
-            type="button"
-            className="btn btn--primary"
-            onClick={() => void submit()}
-            disabled={busy}
-          >
-            {busy ? <Loader2 size={16} className="spin" /> : null} {t('courses.runner.submit')}
-          </button>
+          {expired ? (
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={() => void restart()}
+              disabled={busy}
+            >
+              {busy ? <Loader2 size={16} className="spin" /> : null} {t('courses.runner.restart')}
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={() => void submit()}
+              disabled={busy}
+            >
+              {busy ? <Loader2 size={16} className="spin" /> : null} {t('courses.runner.submit')}
+            </button>
+          )}
         </div>
       </div>
     </div>
