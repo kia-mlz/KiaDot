@@ -185,6 +185,19 @@ export class AdminCommerceService {
         source: dto.source ?? 'FREE',
       },
     });
+    if (resourceType === 'course') {
+      const course = await this.prisma.course.findFirst({
+        where: { OR: [{ slug: dto.resourceId }, { id: dto.resourceId }] },
+        select: { id: true },
+      });
+      if (course) {
+        await this.prisma.enrollment.upsert({
+          where: { userId_courseId: { userId: dto.userId, courseId: course.id } },
+          create: { userId: dto.userId, courseId: course.id },
+          update: {},
+        });
+      }
+    }
     await this.audit.record({
       actor,
       action: 'entitlement.grant',
@@ -224,6 +237,19 @@ export class AdminCommerceService {
       throw new NotFoundException(`Entitlement ${id} not found`);
     }
     await this.prisma.entitlement.delete({ where: { id } });
+    if (entitlement.resourceType === 'course') {
+      const course = await this.prisma.course.findFirst({
+        where: {
+          OR: [{ slug: entitlement.resourceId }, { id: entitlement.resourceId }],
+        },
+        select: { id: true },
+      });
+      if (course) {
+        await this.prisma.enrollment.deleteMany({
+          where: { userId: entitlement.userId, courseId: course.id },
+        });
+      }
+    }
     await this.audit.record({
       actor,
       action: 'entitlement.revoke',

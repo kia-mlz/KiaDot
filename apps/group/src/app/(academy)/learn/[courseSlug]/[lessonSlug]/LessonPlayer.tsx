@@ -174,7 +174,9 @@ function LessonPlayerContent({
         if (anchorIndex === undefined || anchorIndex >= i) return false;
         return list.some((exam) => !passedExamIds.has(exam.id));
       });
-      if (gated) locked.add(lessons[i].slug);
+      // The opening lessons stay reachable, including the published film, even
+      // when a midterm is anchored on an earlier lesson.
+      if (gated && !lessons[i].freePreview) locked.add(lessons[i].slug);
     }
     return locked;
   }, [lessons, examsAfterLesson, passedExamIds]);
@@ -361,7 +363,14 @@ function LessonPlayerContent({
   const activeScene =
     motion?.scenes.find((scene) => motionTime >= scene.startSec && motionTime < scene.endSec) ?? null;
   const motionPlayer = motion ? (
-    <MotionLessonPlayer video={motion} onTime={setMotionTime} seekRef={motionSeek} />
+    <MotionLessonPlayer
+      video={motion}
+      onTime={setMotionTime}
+      seekRef={motionSeek}
+      onComplete={() => {
+        if (!lesson?.completed) void markComplete();
+      }}
+    />
   ) : null;
   const lessonBody =
     motion && syncText ? (

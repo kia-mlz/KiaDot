@@ -17,14 +17,21 @@ import {
 
 const HIDE_MS = 2800;
 
+function publishedWatchKey(lessonId: string): string {
+  return `kia-published-watch:${lessonId}`;
+}
+
 export function MotionLessonPlayer({
   video,
   onTime,
   seekRef,
+  onComplete,
 }: {
   video: PublishedMotionVideo;
   onTime: (seconds: number) => void;
   seekRef: MutableRefObject<((seconds: number) => void) | null>;
+  /** Fired once when a committed lesson film finishes. Motion projects keep their own progress API. */
+  onComplete?: () => void;
 }) {
   const { t, locale } = useLanguage();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -87,6 +94,18 @@ export function MotionLessonPlayer({
     (ended = false, viewStart = false) => {
       const element = videoRef.current;
       if (!element) return;
+      if (video.projectId === 'published-file') {
+        try {
+          localStorage.setItem(
+            publishedWatchKey(video.lessonId),
+            JSON.stringify({ lastTimeSec: element.currentTime || 0, ended }),
+          );
+        } catch {
+          // Private mode can reject storage; the lesson still plays.
+        }
+        if (ended) onComplete?.();
+        return;
+      }
       void api
         .motionSaveProgress(video.lessonId, {
           lastTimeSec: element.currentTime || 0,
@@ -96,7 +115,7 @@ export function MotionLessonPlayer({
         })
         .catch(() => undefined);
     },
-    [video.lessonId],
+    [onComplete, video.lessonId, video.projectId],
   );
 
   const queueSave = useCallback(() => {
@@ -307,7 +326,18 @@ export function MotionLessonPlayer({
             const element = event.currentTarget;
             setDuration(element.duration || 0);
             syncBuffered();
-            const resumeAt = video.progress?.lastTimeSec ?? 0;
+            let resumeAt = video.progress?.lastTimeSec ?? 0;
+            if (video.projectId === 'published-file') {
+              try {
+                const raw = localStorage.getItem(publishedWatchKey(video.lessonId));
+                const saved = raw ? (JSON.parse(raw) as { lastTimeSec?: number; ended?: boolean }) : null;
+                if (saved && !saved.ended && typeof saved.lastTimeSec === 'number') {
+                  resumeAt = saved.lastTimeSec;
+                }
+              } catch {
+                resumeAt = video.progress?.lastTimeSec ?? 0;
+              }
+            }
             if (resumeAt > 1 && resumeAt < element.duration - 1) {
               element.currentTime = resumeAt;
               setCurrent(resumeAt);

@@ -251,6 +251,32 @@ Review the STAR method on [Wikipedia](https://en.wikipedia.org/wiki/Situation,_T
     });
   }
 
+  const htmlCourse = seededCourses.find((course) => course.slug === 'html');
+  if (htmlCourse) {
+    await prisma.entitlement.upsert({
+      where: {
+        userId_resourceType_resourceId: {
+          userId: user.id,
+          resourceType: 'course',
+          resourceId: 'html',
+        },
+      },
+      create: {
+        userId: user.id,
+        resourceType: 'course',
+        resourceId: 'html',
+        source: 'FREE',
+      },
+      update: {},
+    });
+    await prisma.enrollment.upsert({
+      where: { userId_courseId: { userId: user.id, courseId: htmlCourse.id } },
+      create: { userId: user.id, courseId: htmlCourse.id },
+      update: {},
+    });
+    console.log('Seeded learner access: alex is enrolled in html');
+  }
+
   console.log(`Seeded admin user: ${admin.name} (${admin.email})`);
   console.log(`Seeded learner: ${user.name} (${user.email ?? 'alex@kia.academy'})`);
   console.log(
@@ -359,7 +385,22 @@ Review the STAR method on [Wikipedia](https://en.wikipedia.org/wiki/Situation,_T
       const exists = await prisma.courseExam.findFirst({
         where: { courseId: course.id, kind: exam.kind },
       });
-      if (exists) continue;
+      if (exists) {
+        const questions = exists.questions;
+        const placeholder =
+          Array.isArray(questions) &&
+          questions.length === 1 &&
+          questions[0] &&
+          typeof questions[0] === 'object' &&
+          (questions[0] as { id?: string }).id === 'gen-1';
+        if (placeholder && bank) {
+          await prisma.courseExam.update({
+            where: { id: exists.id },
+            data: { questions: exam.questions },
+          });
+        }
+        continue;
+      }
       await prisma.courseExam.create({
         data: {
           courseId: course.id,

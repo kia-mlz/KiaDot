@@ -604,9 +604,18 @@ export class CourseExamsService {
     const enrollment = await this.prisma.enrollment.findFirst({
       where: { userId, courseId },
     });
-    if (!enrollment) {
-      throw new ForbiddenException('Enroll in the course to take its exams');
+    if (enrollment) return;
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      select: { slug: true },
+    });
+    if (course) {
+      const entitlement = await this.prisma.entitlement.findFirst({
+        where: { userId, resourceType: 'course', resourceId: course.slug },
+      });
+      if (entitlement) return;
     }
+    throw new ForbiddenException('Enroll in the course to take its exams');
   }
 
   private async ensureCourseBySlug(slug: string) {

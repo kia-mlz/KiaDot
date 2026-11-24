@@ -29,6 +29,9 @@ export default function AcademyDashboardPage() {
   const { t } = useLanguage();
 
   const ownsRoadmap = hasRoadmap || Boolean(learnerState?.hasRoadmap);
+  const hasCourse =
+    (learnerState?.enrollments?.length ?? 0) > 0 ||
+    (learnerState?.entitlements ?? []).some((item) => item.startsWith('course:'));
   const ready = hydrated && !authLoading;
 
   useEffect(() => {
@@ -42,7 +45,7 @@ export default function AcademyDashboardPage() {
     return <div className="page-content auth-loading">{t('dashboard.loading')}</div>;
   }
 
-  if (!ownsRoadmap) {
+  if (!ownsRoadmap && !hasCourse) {
     return (
       <div className="page-content dept--academy">
         <div className="container hub">
