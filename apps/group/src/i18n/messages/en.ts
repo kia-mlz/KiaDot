@@ -3152,6 +3152,8 @@ export const en = {
     pause: 'Pause',
     progress: 'Progress',
     volume: 'Volume',
+    mute: 'Mute',
+    unmute: 'Unmute',
     speed: 'Speed',
     subtitles: 'Subtitles',
     subtitlesOff: 'Off',
