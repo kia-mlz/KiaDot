@@ -18,7 +18,19 @@ export type SceneVisualMode = 'html' | 'css' | 'js' | 'files' | 'list' | 'theory
 
 export type CueMotion = 'enter' | 'wrap' | 'nest' | 'type' | 'shift' | 'grow' | 'recolor' | 'highlight';
 
-export type CueKind = 'page' | 'tag' | 'code-line' | 'shape' | 'label' | 'step' | 'file' | 'folder' | 'value' | 'arrow';
+export type CueKind =
+  | 'page'
+  | 'tag'
+  | 'code-line'
+  | 'shape'
+  | 'label'
+  | 'step'
+  | 'file'
+  | 'folder'
+  | 'value'
+  | 'arrow'
+  | 'icon'
+  | 'metaphor';
 
 export interface VisualCue {
   id: string;
@@ -99,8 +111,8 @@ function clip(text: string, max: number): string {
 function conceptLabel(input: ScenePlanInput): string {
   const screen = input.onScreenText.replace(/\s+/g, ' ').trim();
   const title = input.title.replace(/\s+/g, ' ').trim();
-  if (screen && screen.length <= 42) return screen;
-  return clip(title || screen, 42);
+  if (screen && screen.length <= 18) return screen;
+  return clip(title || screen, 18);
 }
 
 /** Lesson playground fences store JSON. The picture uses the html/css/js inside, not the wrapper. */
@@ -274,6 +286,29 @@ function labelCue(input: ScenePlanInput): VisualCue {
   return { id: 'label', kind: 'label', text: conceptLabel(input), motion: 'enter', at: 0 };
 }
 
+/** A structure beat ends as a picture: page blocks beside a skeleton, not a paragraph. */
+function wantsStructurePicture(text: string): boolean {
+  return /ساختار|اسکلت|structure|skeleton/i.test(text);
+}
+
+function iconCue(name: string, index: number): VisualCue {
+  return { id: `icon-${index}`, kind: 'icon', text: name, motion: 'enter', at: 0 };
+}
+
+/** Outline icons chosen from what the scene actually names. Geometric marks otherwise. */
+function iconCues(corpus: string): VisualCue[] {
+  const names: string[] = [];
+  if (/پوشه|folder|فایل|فایل‌ها|\.html|\.css|\.js/i.test(corpus)) names.push('folder', 'file');
+  if (/<\s*\/?[a-z]|تگ|html|css/i.test(corpus)) names.push('brackets', 'page');
+  if (names.length === 0) names.push('circle', 'square', 'triangle');
+  const unique = [...new Set(names)].slice(0, 4);
+  return unique.map((name, index) => iconCue(name, index));
+}
+
+function metaphorCue(): VisualCue {
+  return { id: 'metaphor', kind: 'metaphor', text: 'skeleton', motion: 'enter', at: 0 };
+}
+
 function lineCues(source: string): VisualCue[] {
   return codeLinesOf(source).map((text, index) => ({
     id: `code-${index}`,
@@ -340,6 +375,8 @@ function htmlPlan(input: ScenePlanInput, shown: string, prose: string): SceneVis
     }
   }
   cues.push(...lineCues(prettifyMarkup(shown)));
+  cues.push(...iconCues(`${prose}\n${shown}`));
+  if (wantsStructurePicture(prose)) cues.push(metaphorCue());
   const label = labelCue(input);
   if (!label.text || label.text === 'kia-playground') {
     const named = cues.find((cue) => cue.kind === 'tag');
@@ -390,6 +427,7 @@ function cssPlan(input: ScenePlanInput, shown: string, corpus: string): SceneVis
     });
   }
   cues.push(...lineCues(shown));
+  cues.push(...iconCues(corpus).slice(0, 2));
   return finish(
     'css',
     cues,
@@ -413,6 +451,7 @@ function jsPlan(input: ScenePlanInput, shown: string, corpus: string): SceneVisu
     });
   });
   cues.push(...lineCues(shown));
+  cues.push(...iconCues(corpus).slice(0, 3));
   if (cues.length < 2) {
     cues.push({ id: 'shape', kind: 'shape', text: '', motion: 'grow', at: 0 });
   }
@@ -436,22 +475,31 @@ function filesPlan(input: ScenePlanInput, corpus: string): SceneVisualPlan {
       parentId: folder ? 'folder' : undefined,
     });
   });
+  cues.push(...iconCues(corpus).slice(0, 2));
+  if (wantsStructurePicture(corpus)) cues.push(metaphorCue());
   return finish('files', cues, [], []);
 }
 
 function listPlan(input: ScenePlanInput, steps: string[]): SceneVisualPlan {
+  const corpus = [input.title, input.onScreenText, input.narration].filter(Boolean).join('\n');
   const cues: VisualCue[] = [labelCue(input)];
   steps.forEach((step, index) => {
-    cues.push({ id: `step-${index}`, kind: 'step', text: step, motion: 'enter', at: 0 });
+    cues.push({ id: `step-${index}`, kind: 'step', text: clip(step, 18), motion: 'enter', at: 0 });
   });
+  cues.push(...iconCues(corpus).slice(0, 3));
+  if (wantsStructurePicture(corpus)) cues.push(metaphorCue());
   return finish('list', cues, [], []);
 }
 
 function theoryPlan(input: ScenePlanInput): SceneVisualPlan {
-  return finish('theory', [
+  const corpus = [input.title, input.onScreenText, input.narration].filter(Boolean).join('\n');
+  const cues: VisualCue[] = [
     labelCue(input),
     { id: 'shape', kind: 'shape', text: '', motion: 'grow', at: 0 },
-  ], [], []);
+    ...iconCues(corpus),
+  ];
+  if (wantsStructurePicture(corpus)) cues.push(metaphorCue());
+  return finish('theory', cues, [], []);
 }
 
 export function planSceneVisual(input: ScenePlanInput): SceneVisualPlan {

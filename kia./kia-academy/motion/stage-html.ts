@@ -3,11 +3,9 @@ import { escapeHtml } from './html-escape';
 import type { SceneVisualPlan, VisualCue } from './scene-plan';
 
 /**
- * Paper and ink are the documented app scale (`--ink-0`, `--ink-50`, `--ink-200`,
- * `--ink-500`, `--ink-950` / `DARK_INK`). Department colour comes only from
- * `@kia./brand`.
+ * Ink is the documented app scale (`DARK_INK` and the paper mixes). The film
+ * field is white mixed with the Academy token from `@kia./brand`.
  */
-const PAPER = '#F5F6FB';
 const CARD = '#FFFFFF';
 const LINE = '#D6DAE9';
 const MUTED = '#626C8C';
@@ -77,6 +75,42 @@ function safeColor(value: string | undefined, fallback: string): string {
   return named.has(v) ? v : fallback;
 }
 
+function outlineSvg(name: string): string {
+  const stroke =
+    'fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"';
+  switch (name) {
+    case 'folder':
+      return `<svg viewBox="0 0 48 48" aria-hidden="true" ${stroke}><path d="M8 16h10l4 4h18v18H8z"/></svg>`;
+    case 'file':
+      return `<svg viewBox="0 0 48 48" aria-hidden="true" ${stroke}><path d="M14 6h14l10 10v26H14z"/><path d="M28 6v10h10"/></svg>`;
+    case 'brackets':
+      return `<svg viewBox="0 0 48 48" aria-hidden="true" ${stroke}><path d="M18 10 8 24l10 14M30 10l10 14-10 14"/></svg>`;
+    case 'page':
+      return `<svg viewBox="0 0 48 48" aria-hidden="true" ${stroke}><rect x="10" y="6" width="28" height="36" rx="3"/><path d="M16 16h16M16 24h16M16 32h10"/></svg>`;
+    case 'square':
+      return `<svg viewBox="0 0 48 48" aria-hidden="true" ${stroke}><rect x="10" y="10" width="28" height="28" rx="4"/></svg>`;
+    case 'triangle':
+      return `<svg viewBox="0 0 48 48" aria-hidden="true" ${stroke}><path d="M24 8 42 40H6z"/></svg>`;
+    default:
+      return `<svg viewBox="0 0 48 48" aria-hidden="true" ${stroke}><circle cx="24" cy="24" r="12"/></svg>`;
+  }
+}
+
+function renderIcon(cue: VisualCue): string {
+  return `${cueOpen(cue, 'pop-icon')}${outlineSvg(cue.text)}</div>`;
+}
+
+function iconRow(cues: VisualCue[]): string {
+  const icons = cues.filter((cue) => cue.kind === 'icon');
+  if (!icons.length) return '';
+  return `<div class="icon-row">${icons.map(renderIcon).join('')}</div>`;
+}
+
+/** Page blocks beside a drawn skeleton. No lesson paragraph is placed here. */
+function renderMetaphor(cue: VisualCue): string {
+  return `${cueOpen(cue, 'metaphor')}<div class="page-stack" aria-hidden="true"><span></span><span></span><span></span></div><svg class="bones" viewBox="0 0 80 140" aria-hidden="true"><circle cx="40" cy="16" r="10"/><path d="M40 26v52M16 48h48M40 78 22 118M40 78l18 40"/></svg></div>`;
+}
+
 function cueOpen(cue: VisualCue, className: string, extraStyle = ''): string {
   const style = [`--at:${cue.at}`, extraStyle].filter(Boolean).join(';');
   return `<div class="${className}" style="${style}">`;
@@ -138,7 +172,8 @@ function renderHtml(cues: VisualCue[], palette: { fill: string; ink: string }[])
   const page = cues.find((cue) => cue.kind === 'page');
   const at = page?.at ?? 0;
   const inner = renderTags(cues, 'page', palette, 0);
-  return `<div class="canvas"><div class="page" style="--at:${at}">${inner}</div></div>`;
+  const metaphor = cues.find((cue) => cue.kind === 'metaphor');
+  return `<div class="canvas"><div class="page" style="--at:${at}">${inner}</div>${iconRow(cues)}${metaphor ? renderMetaphor(metaphor) : ''}</div>`;
 }
 
 function renderCss(cues: VisualCue[], academy: string): string {
@@ -160,7 +195,7 @@ function renderCss(cues: VisualCue[], academy: string): string {
   const shapeHtml = shape
     ? `<div class="shape" style="--at:${shape.at};--target:${target};--grow:${grow};--shift:${shift};--recolor:${recolor}"><b dir="ltr">${escapeHtml(shape.text)}</b></div>`
     : '';
-  return `<div class="canvas css-canvas">${shapeHtml}${arrowHtml}<div class="pills">${pills}</div></div>`;
+  return `<div class="canvas css-canvas">${shapeHtml}${arrowHtml}${iconRow(cues)}<div class="pills">${pills}</div></div>`;
 }
 
 function renderJs(cues: VisualCue[]): string {
@@ -172,7 +207,7 @@ function renderJs(cues: VisualCue[]): string {
       return `${cueOpen(cue, 'value-row')}<b dir="ltr">${escapeHtml((name ?? '').trim())}</b><i>=</i><em dir="ltr">${escapeHtml(value)}</em></div>`;
     })
     .join('');
-  return `<div class="canvas js-canvas">${rows}</div>`;
+  return `<div class="canvas js-canvas">${iconRow(cues)}${rows}</div>`;
 }
 
 function renderFiles(cues: VisualCue[]): string {
@@ -184,8 +219,10 @@ function renderFiles(cues: VisualCue[]): string {
         `${cueOpen(cue, 'file-card')}<span class="file-fold"></span><b dir="ltr">${escapeHtml(cue.text)}</b></div>`,
     )
     .join('');
-  if (!folder) return `<div class="canvas file-canvas">${cards}</div>`;
-  return `<div class="canvas file-canvas">${cueOpen(folder, 'folder')}<b>${escapeHtml(folder.text)}</b><div class="file-row">${cards}</div></div></div>`;
+  const metaphor = cues.find((cue) => cue.kind === 'metaphor');
+  const extra = `${iconRow(cues)}${metaphor ? renderMetaphor(metaphor) : ''}`;
+  if (!folder) return `<div class="canvas file-canvas">${cards}${extra}</div>`;
+  return `<div class="canvas file-canvas">${cueOpen(folder, 'folder')}<b>${escapeHtml(folder.text)}</b><div class="file-row">${cards}</div></div>${extra}</div>`;
 }
 
 function renderList(cues: VisualCue[]): string {
@@ -196,13 +233,16 @@ function renderList(cues: VisualCue[]): string {
         `${cueOpen(cue, 'step')}<span class="num">${index + 1}</span><b>${escapeHtml(cue.text)}</b></div>`,
     )
     .join('');
-  return `<div class="canvas list-canvas">${rows}</div>`;
+  const metaphor = cues.find((cue) => cue.kind === 'metaphor');
+  return `<div class="canvas list-canvas">${rows}${iconRow(cues)}${metaphor ? renderMetaphor(metaphor) : ''}</div>`;
 }
 
 function renderTheory(cues: VisualCue[]): string {
-  const shape = cues.find((cue) => cue.kind === 'shape');
-  const at = shape?.at ?? 0.4;
-  return `<div class="canvas theory-canvas"><div class="orb" style="--at:${at}"></div></div>`;
+  const slabs = [0.06, 0.16, 0.26]
+    .map((at, index) => `<span class="slab" style="--at:${at};width:${128 + index * 40}px"></span>`)
+    .join('');
+  const metaphor = cues.find((cue) => cue.kind === 'metaphor');
+  return `<div class="canvas theory-canvas"><div class="stack">${slabs}</div>${iconRow(cues)}${metaphor ? renderMetaphor(metaphor) : ''}</div>`;
 }
 
 function picture(plan: SceneVisualPlan, academy: string, palette: { fill: string; ink: string }[]): string {
@@ -226,6 +266,8 @@ export function buildStageDocument(plan: SceneVisualPlan, scene: StageSceneText,
   const academy = BRAND_COLORS.academy;
   const onAcademy = readableInk(academy);
   const palette = fills(academy);
+  const field = mixHex('#ffffff', academy, 0.16);
+  const fieldDeep = mixHex('#ffffff', academy, 0.38);
   const label = plan.cues.find((cue) => cue.id === 'label');
   const title = label?.text ? escapeHtml(label.text) : escapeHtml(scene.title).slice(0, 80);
   const duration = Math.max(4, Math.min(40, Math.round(scene.durationSec || 8)));
@@ -248,28 +290,88 @@ export function buildStageDocument(plan: SceneVisualPlan, scene: StageSceneText,
   html.play { animation: motion-play ${duration}s linear infinite; }
   @keyframes motion-play { from { --t: 0; } to { --t: 1; } }
   body {
-    background-color: ${PAPER};
-    background-image: radial-gradient(${LINE} 1.4px, transparent 1.5px);
-    background-size: 22px 22px;
+    background: ${field};
     color: ${DARK_INK};
     font-family: "Noto Naskh Arabic", "Kia Naskh", "DejaVu Sans", "Kia Sans", sans-serif;
   }
-  .stage { box-sizing: border-box; height: 100%; display: flex; flex-direction: column; padding: 3.2% 4.2% 2.4%; gap: 2.2%; }
-  .title-chip, .tag-box, .code-card, .shape, .folder, .file-card, .step, .value-row, .pill {
-    border: 3px solid ${DARK_INK};
-    box-shadow: 6px 6px 0 ${DARK_INK};
-    background: ${CARD};
+  .stage { position: relative; box-sizing: border-box; height: 100%; display: flex; flex-direction: column; padding: 4.2% 4.6% 3%; gap: 2%; }
+  .mark {
+    position: absolute;
+    top: 5%;
+    left: 4.2%;
+    width: 46px;
+    height: 46px;
+    border: 3px solid ${academy};
+    background: ${fieldDeep};
+    border-radius: calc(8px + var(--t) * 24px);
+    transform: rotate(calc(var(--t) * 70deg)) scale(calc(0.78 + var(--t) * 0.34));
   }
-  .title-chip {
-    --p: clamp(0, (var(--t) - var(--at) + 0.2) / 0.2, 1);
-    align-self: flex-start;
-    margin: 0;
-    padding: 0.35em 0.9em;
-    border-radius: 18px;
-    font-size: clamp(22px, 3.1vw, 40px);
-    line-height: 1.25;
+  .type {
+    --p: clamp(0, var(--t) / 0.16, 1);
+    display: inline-block;
+    max-width: 16ch;
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: clamp(32px, 4.6vw, 68px);
+    font-weight: 700;
+    line-height: 1.15;
+    clip-path: inset(0 0 0 calc((1 - var(--p)) * 100%));
+  }
+  .pop-icon {
+    --p: clamp(0, (var(--t) - var(--at)) / 0.08, 1);
+    width: 76px;
+    height: 76px;
+    color: ${academy};
     opacity: var(--p);
-    transform: translateY(calc((1 - var(--p)) * -28px));
+    transform: scale(calc(0.35 + var(--p) * 0.75));
+  }
+  .pop-icon svg { width: 100%; height: 100%; display: block; }
+  .icon-row { display: flex; align-items: center; justify-content: center; gap: 18px; }
+  .metaphor {
+    --p: clamp(0, (var(--t) - var(--at)) / 0.14, 1);
+    display: flex;
+    align-items: flex-end;
+    gap: 28px;
+    opacity: var(--p);
+    transform: translateY(calc((1 - var(--p)) * 18px));
+  }
+  .page-stack { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+  .page-stack span {
+    display: block;
+    height: 22px;
+    border: 3px solid ${academy};
+    border-radius: 8px;
+    background: ${fieldDeep};
+  }
+  .page-stack span:nth-child(1) { width: 118px; }
+  .page-stack span:nth-child(2) { width: 168px; }
+  .page-stack span:nth-child(3) { width: 92px; }
+  .bones {
+    width: 64px;
+    height: 108px;
+    fill: none;
+    stroke: ${academy};
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 240;
+    stroke-dashoffset: calc((1 - var(--p)) * 240);
+  }
+  .stack { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+  .slab {
+    --p: clamp(0, (var(--t) - var(--at)) / 0.1, 1);
+    display: block;
+    height: 28px;
+    border: 3px solid ${academy};
+    border-radius: 10px;
+    background: ${fieldDeep};
+    opacity: var(--p);
+    transform: scaleX(calc(0.25 + var(--p) * 0.75));
+    transform-origin: right center;
+  }
+  .tag-box, .code-card, .shape, .folder, .file-card, .step, .value-row, .pill {
+    border: 2px solid ${academy};
+    background: ${CARD};
   }
   .board { flex: 1; min-height: 0; display: flex; gap: 2.4%; align-items: stretch; }
   .code-card {
@@ -279,8 +381,7 @@ export function buildStageDocument(plan: SceneVisualPlan, scene: StageSceneText,
     margin: 0;
     padding: calc(var(--p) * 18px) calc(var(--p) * 16px);
     border-radius: 22px;
-    border-width: calc(var(--p) * 3px);
-    box-shadow: calc(var(--p) * 6px) calc(var(--p) * 6px) 0 ${DARK_INK};
+    border-width: calc(var(--p) * 2px);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -309,7 +410,7 @@ export function buildStageDocument(plan: SceneVisualPlan, scene: StageSceneText,
   .tok-val { color: ${mixHex(academy, DARK_INK, 0.35)}; }
   .canvas { flex: 1; min-width: 0; min-height: 0; position: relative; display: flex; }
   .page {
-    --p: clamp(0, (var(--t) - var(--at)) / 0.22, 1);
+    --p: clamp(0, (var(--t) - var(--at)) / 0.14, 1);
     flex: 1;
     display: flex;
     flex-wrap: wrap;
@@ -318,9 +419,8 @@ export function buildStageDocument(plan: SceneVisualPlan, scene: StageSceneText,
     gap: 14px;
     padding: 22px;
     border-radius: 28px;
-    border: 3px dashed ${DARK_INK};
-    background: color-mix(in srgb, ${CARD} 88%, transparent);
-    box-shadow: 8px 8px 0 ${DARK_INK};
+    border: 3px solid ${academy};
+    background: color-mix(in srgb, ${CARD} 72%, ${field});
     opacity: var(--p);
     transform: scale(calc(0.62 + var(--p) * 0.38));
     transform-origin: 50% 45%;
@@ -342,8 +442,7 @@ export function buildStageDocument(plan: SceneVisualPlan, scene: StageSceneText,
     background: var(--fill, ${CARD});
     color: var(--on, ${DARK_INK});
     opacity: var(--p);
-    box-shadow: calc(var(--p) * 5px) calc(var(--p) * 5px) 0 ${DARK_INK};
-    transform: translateY(calc((1 - var(--p)) * 64px)) scale(calc(0.55 + var(--p) * 0.45));
+    transform: translateY(calc((1 - var(--p)) * 36px)) scale(calc(0.6 + var(--p) * 0.4));
   }
   .tag-box.wrap { flex: 1 1 220px; max-height: calc(var(--p) * 520px); }
   .tag-box.nest { flex: 1 1 140px; max-height: calc(var(--p) * 180px); }
@@ -358,7 +457,7 @@ export function buildStageDocument(plan: SceneVisualPlan, scene: StageSceneText,
   }
   .css-canvas { flex-direction: column; }
   .shape {
-    --p: clamp(0, (var(--t) - var(--at)) / 0.55, 1);
+    --p: clamp(0, (var(--t) - var(--at)) / 0.2, 1);
     width: calc(120px + var(--grow) * var(--p) * 200px);
     height: calc(120px + var(--grow) * var(--p) * 110px);
     border-radius: calc(24px + var(--p) * 18px);
@@ -373,7 +472,7 @@ export function buildStageDocument(plan: SceneVisualPlan, scene: StageSceneText,
   }
   .shape b { color: ${DARK_INK}; background: ${CARD}; border-radius: 999px; padding: 4px 12px; border: 2px solid ${DARK_INK}; }
   .arrow {
-    --p: clamp(0, (var(--t) - var(--at)) / 0.35, 1);
+    --p: clamp(0, (var(--t) - var(--at)) / 0.14, 1);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -398,7 +497,7 @@ export function buildStageDocument(plan: SceneVisualPlan, scene: StageSceneText,
   }
   .js-canvas { flex-direction: column; align-items: stretch; justify-content: center; padding: 4%; }
   .value-row {
-    --p: clamp(0, (var(--t) - var(--at)) / 0.22, 1);
+    --p: clamp(0, (var(--t) - var(--at)) / 0.12, 1);
     display: flex;
     align-items: center;
     gap: 14px;
@@ -417,21 +516,23 @@ export function buildStageDocument(plan: SceneVisualPlan, scene: StageSceneText,
     transform: translateX(calc((1 - var(--p)) * 140px));
   }
   .folder {
-    --p: clamp(0, (var(--t) - var(--at)) / 0.24, 1);
-    width: 86%;
-    min-height: 70%;
+    --p: clamp(0, (var(--t) - var(--at)) / 0.14, 1);
+    width: 92%;
+    max-height: 46%;
+    flex: 0 1 auto;
     border-radius: 28px;
-    padding: 18px 18px 22px;
+    padding: 14px 16px 16px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     opacity: var(--p);
-    transform: scale(calc(0.7 + var(--p) * 0.3));
+    transform: scale(calc(0.86 + var(--p) * 0.14));
   }
   .folder > b { font-size: clamp(18px, 2vw, 28px); }
-  .file-row, .file-canvas { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; }
+  .file-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; }
+  .file-canvas { flex-direction: column; flex-wrap: nowrap; justify-content: space-evenly; overflow: hidden; }
   .file-card {
-    --p: clamp(0, (var(--t) - var(--at)) / 0.2, 1);
+    --p: clamp(0, (var(--t) - var(--at)) / 0.12, 1);
     width: 148px;
     height: 96px;
     border-radius: 16px;
@@ -456,39 +557,36 @@ export function buildStageDocument(plan: SceneVisualPlan, scene: StageSceneText,
     border-bottom: 0;
     border-radius: 8px 8px 0 0;
   }
-  .list-canvas { flex-direction: column; align-items: stretch; justify-content: center; padding: 2% 6%; gap: 12px; }
+  .list-canvas { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: center; padding: 2% 4%; gap: 16px; }
   .step {
-    --p: clamp(0, (var(--t) - var(--at)) / 0.18, 1);
+    --p: clamp(0, (var(--t) - var(--at)) / 0.1, 1);
+    width: 148px;
+    min-height: 148px;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 14px;
-    border-radius: 18px;
-    padding: 10px 16px;
+    justify-content: center;
+    gap: 10px;
+    border-radius: 28px;
+    padding: 12px;
+    text-align: center;
     opacity: var(--p);
-    transform: translateX(calc((1 - var(--p)) * 80px));
+    transform: translateY(calc((1 - var(--p)) * 28px)) scale(calc(0.7 + var(--p) * 0.3));
   }
+  .step b { font-size: 16px; line-height: 1.3; font-weight: 700; }
   .num {
-    width: 42px;
-    height: 42px;
+    width: 54px;
+    height: 54px;
     border-radius: 50%;
     display: grid;
     place-items: center;
     background: ${academy};
     color: ${onAcademy};
     font-family: "DejaVu Sans", "Kia Sans", sans-serif;
+    font-size: 22px;
     flex: none;
   }
-  .theory-canvas { gap: 28px; }
-  .orb {
-    --p: clamp(0, (var(--t) - var(--at)) / 0.7, 1);
-    width: calc(36px + var(--p) * 180px);
-    height: calc(36px + var(--p) * 180px);
-    border-radius: 50%;
-    border: 8px solid ${academy};
-    box-shadow: 8px 8px 0 ${DARK_INK};
-    background: color-mix(in srgb, ${academy} calc(var(--p) * 55%), ${CARD});
-  }
-  .theory-canvas .title-chip { display: none; }
+  .theory-canvas, .file-canvas { gap: 22px; }
   .kinetic {
     font-size: clamp(36px, 6vw, 84px);
     line-height: 1.15;
@@ -505,13 +603,14 @@ export function buildStageDocument(plan: SceneVisualPlan, scene: StageSceneText,
   @media (max-width: 720px) {
     .board { flex-direction: column; }
     .code-card { width: 100%; max-height: 34%; }
-    .title-chip { font-size: 22px; }
+    .type { font-size: 28px; }
   }
 </style>
 </head>
 <body>
 <main class="stage">
-  ${label ? cueOpen(label, 'title-chip') : '<div class="title-chip" style="--at:0">'}<span>${title}</span></div>
+  <div class="mark" aria-hidden="true"></div>
+  ${label ? cueOpen(label, 'label-row') : '<div class="label-row" style="--at:0">'}<span class="type">${title}</span></div>
   ${instructor}
   <div class="board">
     ${renderCode(plan.cues)}

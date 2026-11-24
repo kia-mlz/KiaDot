@@ -52,6 +52,12 @@ also the subtitle source. It is not drawn as a paragraph on the picture.
 
 What the picture does:
 
+Every frame is one flat light field mixed from the Academy brand token. A
+small geometric mark morphs for the whole scene. Short labels type on; the
+narration paragraph stays off the picture. Thin outline icons pop in beside
+the thing being explained. A beat about structure ends as a picture: page
+blocks beside a drawn skeleton, not a paragraph card.
+
 - HTML spans draw the named tags. A page outline appears, `<!DOCTYPE html>`
   types on when the lesson says it, and `<html>`, `<head>`, and `<body>` nest
   when those tags are in the span. The lesson’s own code types on beside them.
